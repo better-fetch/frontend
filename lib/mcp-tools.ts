@@ -5,6 +5,7 @@ import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
 import { GOOGLE_SEARCH_RESULTS_METADATA } from "@/tools/google-search-results/metadata";
 import { GOOGLE_MAPS_PLACES_METADATA } from "@/tools/google-maps-places/metadata";
 import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/metadata";
+import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -95,6 +96,11 @@ export const MCP_TOOLS = [
     name: AMAZON_PRODUCT_DETAILS_METADATA.mcpName,
     title: AMAZON_PRODUCT_DETAILS_METADATA.title,
     desc: AMAZON_PRODUCT_DETAILS_METADATA.description,
+  },
+  {
+    name: YOUTUBE_VIDEO_DETAILS_METADATA.mcpName,
+    title: YOUTUBE_VIDEO_DETAILS_METADATA.title,
+    desc: YOUTUBE_VIDEO_DETAILS_METADATA.description,
   },
 ] as const;
 
