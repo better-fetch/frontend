@@ -31,6 +31,9 @@ export function ToolRunner({ slug }: { slug: string }) {
   if (slug === "google-maps-places") {
     return <GoogleMapsPlacesRunner slug={slug} />;
   }
+  if (slug === "google-maps-reviews") {
+    return <GoogleMapsReviewsRunner slug={slug} />;
+  }
   if (slug === "amazon-product-details") {
     return <AmazonProductDetailsRunner slug={slug} />;
   }
@@ -822,6 +825,145 @@ function GoogleMapsPlacesRunner({ slug }: { slug: string }) {
 
           <Button type="submit" disabled={state.status === "running"}>
             {state.status === "running" ? "Running..." : "Extract places"}
+          </Button>
+        </form>
+
+        {state.status === "error" ? (
+          <p className="rounded-lg border border-destructive/40 px-3 py-2 text-sm text-destructive">
+            {state.message}
+          </p>
+        ) : null}
+
+        {state.status === "done" ? (
+          <pre className="max-h-[32rem] overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-xs leading-relaxed">
+            {JSON.stringify(state.body, null, 2)}
+          </pre>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function GoogleMapsReviewsRunner({ slug }: { slug: string }) {
+  const [state, setState] = useState<RunState>({ status: "idle" });
+
+  async function runTool(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setState({ status: "running" });
+    const form = new FormData(event.currentTarget);
+    const targets = String(form.get("targets") ?? "")
+      .split(/\r?\n/)
+      .map((target) => target.trim())
+      .filter(Boolean);
+
+    const payload = {
+      targets,
+      sort: String(form.get("sort") || "newest"),
+      maxReviewsPerTarget: Number(form.get("maxReviewsPerTarget") || 100),
+      countryCode: String(form.get("countryCode") || "us"),
+      languageCode: String(form.get("languageCode") || "en"),
+      strategy: String(form.get("strategy") || "browser"),
+    };
+
+    try {
+      const response = await fetch(`/api/tools/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: body?.error ?? `Run failed (${response.status})`,
+        });
+        return;
+      }
+      setState({ status: "done", body });
+    } catch {
+      setState({ status: "error", message: "Run failed. Check your connection." });
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Run</CardTitle>
+        <CardDescription>
+          Extract structured review rows from public Google Maps places.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={runTool} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="targets">Google Maps place URLs, review URLs, IDs, or searches</Label>
+            <textarea
+              id="targets"
+              name="targets"
+              required
+              rows={4}
+              className="min-h-28 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              placeholder="https://www.google.com/maps/place/...&#10;cid:1234567890123456789&#10;best cafes brisbane"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="sort">Sort</Label>
+              <select
+                id="sort"
+                name="sort"
+                defaultValue="newest"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="newest">Newest</option>
+                <option value="most_relevant">Most relevant</option>
+                <option value="highest_rating">Highest rating</option>
+                <option value="lowest_rating">Lowest rating</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxReviewsPerTarget">Max reviews</Label>
+              <Input
+                id="maxReviewsPerTarget"
+                name="maxReviewsPerTarget"
+                type="number"
+                min={1}
+                max={500}
+                defaultValue={100}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="countryCode">Country</Label>
+              <Input
+                id="countryCode"
+                name="countryCode"
+                defaultValue="us"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="languageCode">Language</Label>
+              <Input id="languageCode" name="languageCode" defaultValue="en" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="strategy">Strategy</Label>
+              <select
+                id="strategy"
+                name="strategy"
+                defaultValue="browser"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="browser">Browser</option>
+                <option value="auto">Auto</option>
+                <option value="http">HTTP</option>
+              </select>
+            </div>
+          </div>
+
+          <Button type="submit" disabled={state.status === "running"}>
+            {state.status === "running" ? "Running..." : "Extract reviews"}
           </Button>
         </form>
 

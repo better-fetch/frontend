@@ -4,6 +4,7 @@ import { SITEMAP_URL_EXTRACTOR_METADATA } from "@/tools/sitemap-url-extractor/me
 import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
 import { GOOGLE_SEARCH_RESULTS_METADATA } from "@/tools/google-search-results/metadata";
 import { GOOGLE_MAPS_PLACES_METADATA } from "@/tools/google-maps-places/metadata";
+import { GOOGLE_MAPS_REVIEWS_METADATA } from "@/tools/google-maps-reviews/metadata";
 import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/metadata";
 import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
@@ -98,6 +99,11 @@ export const MCP_TOOLS = [
     name: GOOGLE_MAPS_PLACES_METADATA.mcpName,
     title: GOOGLE_MAPS_PLACES_METADATA.title,
     desc: GOOGLE_MAPS_PLACES_METADATA.description,
+  },
+  {
+    name: GOOGLE_MAPS_REVIEWS_METADATA.mcpName,
+    title: GOOGLE_MAPS_REVIEWS_METADATA.title,
+    desc: GOOGLE_MAPS_REVIEWS_METADATA.description,
   },
   {
     name: AMAZON_PRODUCT_DETAILS_METADATA.mcpName,

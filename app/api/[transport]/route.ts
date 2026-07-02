@@ -38,6 +38,11 @@ import {
 } from "@/tools/google-maps-places/runtime";
 import { GOOGLE_MAPS_PLACES_METADATA } from "@/tools/google-maps-places/metadata";
 import {
+  GOOGLE_MAPS_REVIEWS_MCP_INPUT_SCHEMA,
+  scrapeGoogleMapsReviews,
+} from "@/tools/google-maps-reviews/runtime";
+import { GOOGLE_MAPS_REVIEWS_METADATA } from "@/tools/google-maps-reviews/metadata";
+import {
   AMAZON_PRODUCT_DETAILS_MCP_INPUT_SCHEMA,
   scrapeAmazonProductDetails,
 } from "@/tools/amazon-product-details/runtime";
@@ -836,6 +841,53 @@ const handler = createMcpHandler(
             return_response_text: true,
             include_html: true,
             wait_ms: request.strategy === "http" ? undefined : 2000,
+            extra_headers: {
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": `${request.languageCode},en;q=0.8`,
+            },
+          });
+          return {
+            ok: result.ok,
+            error: result.error,
+            message: result.message,
+            status: result.status,
+            final_url: result.final_url,
+            html: result.html,
+            body_text: result.body_text,
+            title: result.title,
+          };
+        });
+        const firstError = extraction.errors[0];
+        if (
+          extraction.item_count === 0 &&
+          firstError &&
+          ACCOUNT_LEVEL_ERRORS.has(firstError.error)
+        ) {
+          return toolError({ error: firstError.error, message: firstError.error });
+        }
+        return asText(extraction);
+      },
+    );
+
+    server.registerTool(
+      GOOGLE_MAPS_REVIEWS_METADATA.mcpName,
+      {
+        title: GOOGLE_MAPS_REVIEWS_METADATA.title,
+        description: MCP_TOOL_DESCRIPTIONS.google_maps_reviews,
+        inputSchema: GOOGLE_MAPS_REVIEWS_MCP_INPUT_SCHEMA,
+      },
+      async (args, extra) => {
+        const extraction = await scrapeGoogleMapsReviews(args, async (request) => {
+          const result = await callFetchApi(extra.authInfo!.token, {
+            url: request.url,
+            timeout_ms: request.timeoutSecs * 1000,
+            strategy: request.strategy,
+            country: request.countryCode,
+            cache_ttl_ms: 30_000,
+            return_response_text: true,
+            include_html: true,
+            wait_ms: request.strategy === "http" ? undefined : 1500,
             extra_headers: {
               Accept:
                 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
