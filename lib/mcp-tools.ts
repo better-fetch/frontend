@@ -7,6 +7,7 @@ import { GOOGLE_MAPS_PLACES_METADATA } from "@/tools/google-maps-places/metadata
 import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/metadata";
 import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
+import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -107,6 +108,11 @@ export const MCP_TOOLS = [
     name: REDDIT_POSTS_COMMENTS_METADATA.mcpName,
     title: REDDIT_POSTS_COMMENTS_METADATA.title,
     desc: REDDIT_POSTS_COMMENTS_METADATA.description,
+  },
+  {
+    name: INSTAGRAM_PROFILE_POSTS_METADATA.mcpName,
+    title: INSTAGRAM_PROFILE_POSTS_METADATA.title,
+    desc: INSTAGRAM_PROFILE_POSTS_METADATA.description,
   },
 ] as const;
 
