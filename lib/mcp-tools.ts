@@ -1,0 +1,87 @@
+import { WEBSITE_CONTENT_CRAWLER_METADATA } from "@/tools/website-content-crawler/metadata";
+import { WEBSITE_LOGO_EXTRACTOR_METADATA } from "@/tools/website-logo-extractor/metadata";
+import { SITEMAP_URL_EXTRACTOR_METADATA } from "@/tools/sitemap-url-extractor/metadata";
+import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
+
+export const MCP_TOOLS = [
+  {
+    name: "fetch_url",
+    title: "Fetch URL",
+    desc:
+      "Fetch a URL with Better Fetch's auto strategy: direct HTTP for simple body reads, Chromium when rendering/browser features are needed. Returns body text or HTML plus status, final URL, block, cache, and transport metadata.",
+  },
+  {
+    name: "scrape_json",
+    title: "Scrape JSON API",
+    desc:
+      "Fetch a JSON endpoint with browser-compatible headers and session reuse when needed, returning parsed JSON, fallback body_text, and response metadata.",
+  },
+  {
+    name: "screenshot_url",
+    title: "Screenshot URL",
+    desc:
+      "Render a page and capture a viewport or full-page PNG screenshot.",
+  },
+  {
+    name: "discover_apis",
+    title: "Discover APIs",
+    desc:
+      "Load a page and capture the XHR/fetch calls it makes, with optional response previews and streamed values, to find internal APIs behind the page.",
+  },
+  {
+    name: "get_clearance",
+    title: "Get Cloudflare clearance",
+    desc:
+      "Attempt a Cloudflare challenge flow and return cf_clearance cookie metadata when the browser receives it, plus the reusable Better Fetch session.",
+  },
+  {
+    name: "get_datadome_cookie",
+    title: "Get DataDome cookie",
+    desc:
+      "Render a DataDome-protected page and return datadome cookie metadata when the browser receives it, plus the reusable Better Fetch session.",
+  },
+  {
+    name: "get_usage",
+    title: "Get plan usage",
+    desc:
+      "Check the connected Better Fetch account: plan, calls used this billing period, remaining quota, stored browser sessions, and reset time.",
+  },
+  {
+    name: "list_sessions",
+    title: "List browser sessions",
+    desc:
+      "List active account-scoped browser sessions without exposing cookies, localStorage, or snapshot object paths.",
+  },
+  {
+    name: "clear_session",
+    title: "Clear browser session",
+    desc:
+      "Clear a stored browser session through the backend, delete its portable snapshot, and make future requests with that session name start from a fresh profile key.",
+  },
+  {
+    name: WEBSITE_CONTENT_CRAWLER_METADATA.mcpName,
+    title: WEBSITE_CONTENT_CRAWLER_METADATA.title,
+    desc: WEBSITE_CONTENT_CRAWLER_METADATA.description,
+  },
+  {
+    name: WEBSITE_LOGO_EXTRACTOR_METADATA.mcpName,
+    title: WEBSITE_LOGO_EXTRACTOR_METADATA.title,
+    desc: WEBSITE_LOGO_EXTRACTOR_METADATA.description,
+  },
+  {
+    name: SITEMAP_URL_EXTRACTOR_METADATA.mcpName,
+    title: SITEMAP_URL_EXTRACTOR_METADATA.title,
+    desc: SITEMAP_URL_EXTRACTOR_METADATA.description,
+  },
+  {
+    name: RSS_FEED_READER_METADATA.mcpName,
+    title: RSS_FEED_READER_METADATA.title,
+    desc: RSS_FEED_READER_METADATA.description,
+  },
+] as const;
+
+export type McpToolName = (typeof MCP_TOOLS)[number]["name"];
+
+export const MCP_TOOL_DESCRIPTIONS = Object.fromEntries(
+  MCP_TOOLS.map((tool) => [tool.name, tool.desc]),
+) as Record<McpToolName, string>;

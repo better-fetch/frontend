@@ -1,0 +1,23 @@
+app = "betterfetch-web"
+primary_region = "syd"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[build.args]
+  NEXT_PUBLIC_SUPABASE_URL = "https://vxctympqqqenfhqepnmo.supabase.co"
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_U3rytQlWzEaPpQxwS7ChdA_VHneaeMr"
+  NEXT_PUBLIC_SITE_URL = "https://betterfetch.co"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # Keep one machine warm: Stripe webhooks and magic-link redirects
+  # shouldn't eat a cold start.
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
