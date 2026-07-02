@@ -58,6 +58,11 @@ import {
 } from "@/tools/reddit-posts-comments/runtime";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
 import {
+  scrapeTripadvisorReviews,
+  TRIPADVISOR_REVIEWS_MCP_INPUT_SCHEMA,
+} from "@/tools/tripadvisor-reviews/runtime";
+import { TRIPADVISOR_REVIEWS_METADATA } from "@/tools/tripadvisor-reviews/metadata";
+import {
   INSTAGRAM_PROFILE_POSTS_MCP_INPUT_SCHEMA,
   scrapeInstagramProfilePosts,
 } from "@/tools/instagram-profile-posts/runtime";
@@ -1020,6 +1025,53 @@ const handler = createMcpHandler(
       },
       async (args, extra) => {
         const extraction = await scrapeRedditPostsComments(args, async (request) => {
+          const result = await callFetchApi(extra.authInfo!.token, {
+            url: request.url,
+            timeout_ms: request.timeoutSecs * 1000,
+            strategy: request.strategy,
+            country: request.countryCode,
+            cache_ttl_ms: 30_000,
+            return_response_text: true,
+            include_html: true,
+            wait_ms: request.strategy === "http" ? undefined : 1500,
+            extra_headers: {
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": `${request.languageCode},en;q=0.8`,
+            },
+          });
+          return {
+            ok: result.ok,
+            error: result.error,
+            message: result.message,
+            status: result.status,
+            final_url: result.final_url,
+            html: result.html,
+            body_text: result.body_text,
+            title: result.title,
+          };
+        });
+        const firstError = extraction.errors[0];
+        if (
+          extraction.item_count === 0 &&
+          firstError &&
+          ACCOUNT_LEVEL_ERRORS.has(firstError.error)
+        ) {
+          return toolError({ error: firstError.error, message: firstError.error });
+        }
+        return asText(extraction);
+      },
+    );
+
+    server.registerTool(
+      TRIPADVISOR_REVIEWS_METADATA.mcpName,
+      {
+        title: TRIPADVISOR_REVIEWS_METADATA.title,
+        description: MCP_TOOL_DESCRIPTIONS.tripadvisor_reviews,
+        inputSchema: TRIPADVISOR_REVIEWS_MCP_INPUT_SCHEMA,
+      },
+      async (args, extra) => {
+        const extraction = await scrapeTripadvisorReviews(args, async (request) => {
           const result = await callFetchApi(extra.authInfo!.token, {
             url: request.url,
             timeout_ms: request.timeoutSecs * 1000,

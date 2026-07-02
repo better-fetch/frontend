@@ -8,6 +8,7 @@ import { GOOGLE_MAPS_REVIEWS_METADATA } from "@/tools/google-maps-reviews/metada
 import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/metadata";
 import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
+import { TRIPADVISOR_REVIEWS_METADATA } from "@/tools/tripadvisor-reviews/metadata";
 import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
 import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
@@ -119,6 +120,11 @@ export const MCP_TOOLS = [
     name: REDDIT_POSTS_COMMENTS_METADATA.mcpName,
     title: REDDIT_POSTS_COMMENTS_METADATA.title,
     desc: REDDIT_POSTS_COMMENTS_METADATA.description,
+  },
+  {
+    name: TRIPADVISOR_REVIEWS_METADATA.mcpName,
+    title: TRIPADVISOR_REVIEWS_METADATA.title,
+    desc: TRIPADVISOR_REVIEWS_METADATA.description,
   },
   {
     name: INSTAGRAM_PROFILE_POSTS_METADATA.mcpName,
