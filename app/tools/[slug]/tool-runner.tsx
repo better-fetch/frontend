@@ -55,6 +55,9 @@ export function ToolRunner({ slug }: { slug: string }) {
   if (slug === "facebook-pages") {
     return <FacebookPagesRunner slug={slug} />;
   }
+  if (slug === "website-contact-details") {
+    return <WebsiteContactDetailsRunner slug={slug} />;
+  }
   if (slug === "website-logo-extractor") {
     return <WebsiteLogoExtractorRunner slug={slug} />;
   }
@@ -1916,6 +1919,144 @@ function FacebookPagesRunner({ slug }: { slug: string }) {
 
           <Button type="submit" disabled={state.status === "running"}>
             {state.status === "running" ? "Running..." : "Extract pages"}
+          </Button>
+        </form>
+
+        {state.status === "error" ? (
+          <p className="rounded-lg border border-destructive/40 px-3 py-2 text-sm text-destructive">
+            {state.message}
+          </p>
+        ) : null}
+
+        {state.status === "done" ? (
+          <pre className="max-h-[32rem] overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-xs leading-relaxed">
+            {JSON.stringify(state.body, null, 2)}
+          </pre>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function WebsiteContactDetailsRunner({ slug }: { slug: string }) {
+  const [state, setState] = useState<RunState>({ status: "idle" });
+  const [includeContactPages, setIncludeContactPages] = useState(true);
+
+  async function runTool(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setState({ status: "running" });
+    const form = new FormData(event.currentTarget);
+    const sites = String(form.get("sites") ?? "")
+      .split(/\r?\n/)
+      .map((site) => site.trim())
+      .filter(Boolean);
+
+    const payload = {
+      sites,
+      maxPagesPerSite: Number(form.get("maxPagesPerSite") || 3),
+      includeContactPages,
+      countryCode: String(form.get("countryCode") || "us"),
+      languageCode: String(form.get("languageCode") || "en"),
+      strategy: String(form.get("strategy") || "auto"),
+    };
+
+    try {
+      const response = await fetch(`/api/tools/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: body?.error ?? `Run failed (${response.status})`,
+        });
+        return;
+      }
+      setState({ status: "done", body });
+    } catch {
+      setState({ status: "error", message: "Run failed. Check your connection." });
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Run</CardTitle>
+        <CardDescription>
+          Extract public contact details from company websites.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={runTool} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sites">Website URLs or domains</Label>
+            <textarea
+              id="sites"
+              name="sites"
+              required
+              rows={4}
+              className="min-h-28 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              placeholder="betterfetch.co&#10;https://example.com"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="maxPagesPerSite">Max pages per site</Label>
+              <Input
+                id="maxPagesPerSite"
+                name="maxPagesPerSite"
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={3}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="countryCode">Country</Label>
+              <Input
+                id="countryCode"
+                name="countryCode"
+                defaultValue="us"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="languageCode">Language</Label>
+              <Input id="languageCode" name="languageCode" defaultValue="en" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="strategy">Strategy</Label>
+              <select
+                id="strategy"
+                name="strategy"
+                defaultValue="auto"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="auto">Auto</option>
+                <option value="http">HTTP</option>
+                <option value="browser">Browser</option>
+              </select>
+            </div>
+            <label className="flex min-h-8 items-center gap-2 self-end text-sm">
+              <input
+                name="includeContactPages"
+                type="checkbox"
+                checked={includeContactPages}
+                onChange={(event) =>
+                  setIncludeContactPages(event.currentTarget.checked)
+                }
+                className="size-4 accent-primary"
+              />
+              Follow contact pages
+            </label>
+          </div>
+
+          <Button type="submit" disabled={state.status === "running"}>
+            {state.status === "running" ? "Running..." : "Extract contacts"}
           </Button>
         </form>
 

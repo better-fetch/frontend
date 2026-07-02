@@ -12,6 +12,7 @@ import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/me
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
 import { X_PROFILE_POSTS_METADATA } from "@/tools/x-profile-posts/metadata";
 import { FACEBOOK_PAGES_METADATA } from "@/tools/facebook-pages/metadata";
+import { WEBSITE_CONTACT_DETAILS_METADATA } from "@/tools/website-contact-details/metadata";
 
 export const MARKETPLACE_TOOLS = [
   WEBSITE_CONTENT_CRAWLER_METADATA,
@@ -28,6 +29,7 @@ export const MARKETPLACE_TOOLS = [
   META_ADS_LIBRARY_METADATA,
   X_PROFILE_POSTS_METADATA,
   FACEBOOK_PAGES_METADATA,
+  WEBSITE_CONTACT_DETAILS_METADATA,
 ] as const;
 
 export type MarketplaceTool = (typeof MARKETPLACE_TOOLS)[number];
