@@ -3,6 +3,7 @@ import { WEBSITE_LOGO_EXTRACTOR_METADATA } from "@/tools/website-logo-extractor/
 import { SITEMAP_URL_EXTRACTOR_METADATA } from "@/tools/sitemap-url-extractor/metadata";
 import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
 import { GOOGLE_SEARCH_RESULTS_METADATA } from "@/tools/google-search-results/metadata";
+import { GOOGLE_MAPS_PLACES_METADATA } from "@/tools/google-maps-places/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -83,6 +84,11 @@ export const MCP_TOOLS = [
     name: GOOGLE_SEARCH_RESULTS_METADATA.mcpName,
     title: GOOGLE_SEARCH_RESULTS_METADATA.title,
     desc: GOOGLE_SEARCH_RESULTS_METADATA.description,
+  },
+  {
+    name: GOOGLE_MAPS_PLACES_METADATA.mcpName,
+    title: GOOGLE_MAPS_PLACES_METADATA.title,
+    desc: GOOGLE_MAPS_PLACES_METADATA.description,
   },
 ] as const;
 

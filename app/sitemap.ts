@@ -41,6 +41,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: `${base}/tools/google-maps-places`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
     { url: `${base}/plugin`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/blog`, changeFrequency: "weekly", priority: 0.7 },
     ...posts.map((post) => ({
