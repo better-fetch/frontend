@@ -8,6 +8,7 @@ import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/
 import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
 import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
+import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 
 export const MARKETPLACE_TOOLS = [
   WEBSITE_CONTENT_CRAWLER_METADATA,
@@ -20,6 +21,7 @@ export const MARKETPLACE_TOOLS = [
   YOUTUBE_VIDEO_DETAILS_METADATA,
   REDDIT_POSTS_COMMENTS_METADATA,
   INSTAGRAM_PROFILE_POSTS_METADATA,
+  TIKTOK_PROFILE_VIDEOS_METADATA,
 ] as const;
 
 export type MarketplaceTool = (typeof MARKETPLACE_TOOLS)[number];

@@ -8,6 +8,7 @@ import { AMAZON_PRODUCT_DETAILS_METADATA } from "@/tools/amazon-product-details/
 import { YOUTUBE_VIDEO_DETAILS_METADATA } from "@/tools/youtube-video-details/metadata";
 import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/metadata";
 import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
+import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -113,6 +114,11 @@ export const MCP_TOOLS = [
     name: INSTAGRAM_PROFILE_POSTS_METADATA.mcpName,
     title: INSTAGRAM_PROFILE_POSTS_METADATA.title,
     desc: INSTAGRAM_PROFILE_POSTS_METADATA.description,
+  },
+  {
+    name: TIKTOK_PROFILE_VIDEOS_METADATA.mcpName,
+    title: TIKTOK_PROFILE_VIDEOS_METADATA.title,
+    desc: TIKTOK_PROFILE_VIDEOS_METADATA.description,
   },
 ] as const;
 
