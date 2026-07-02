@@ -27,6 +27,11 @@ import {
   RSS_FEED_READER_MCP_INPUT_SCHEMA,
 } from "@/tools/rss-feed-reader/runtime";
 import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
+import {
+  GOOGLE_SEARCH_RESULTS_MCP_INPUT_SCHEMA,
+  scrapeGoogleSearchResults,
+} from "@/tools/google-search-results/runtime";
+import { GOOGLE_SEARCH_RESULTS_METADATA } from "@/tools/google-search-results/metadata";
 
 // Remote MCP server (Streamable HTTP) at /api/mcp — the endpoint users add
 // to Claude, Claude Cowork, or Claude Desktop as a custom connector. Auth
@@ -37,6 +42,8 @@ import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
 
 const API_BASE = process.env.BETTER_FETCH_API_URL ?? "https://api.betterfetch.co";
 const SITE_BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betterfetch.co";
+const MOBILE_SEARCH_USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
 const COUNTRY = z
   .string()
@@ -704,6 +711,54 @@ const handler = createMcpHandler(
         const firstError = extraction.errors[0];
         if (
           extraction.item_count === 0 &&
+          firstError &&
+          ACCOUNT_LEVEL_ERRORS.has(firstError.error)
+        ) {
+          return toolError({ error: firstError.error, message: firstError.error });
+        }
+        return asText(extraction);
+      },
+    );
+
+    server.registerTool(
+      GOOGLE_SEARCH_RESULTS_METADATA.mcpName,
+      {
+        title: GOOGLE_SEARCH_RESULTS_METADATA.title,
+        description: MCP_TOOL_DESCRIPTIONS.google_search_results,
+        inputSchema: GOOGLE_SEARCH_RESULTS_MCP_INPUT_SCHEMA,
+      },
+      async (args, extra) => {
+        const extraction = await scrapeGoogleSearchResults(args, async (request) => {
+          const result = await callFetchApi(extra.authInfo!.token, {
+            url: request.url,
+            timeout_ms: request.timeoutSecs * 1000,
+            strategy: request.strategy,
+            country: request.countryCode,
+            cache_ttl_ms: 30_000,
+            return_response_text: true,
+            include_html: true,
+            wait_ms: request.strategy === "http" ? undefined : 1000,
+            user_agent: request.mobileResults ? MOBILE_SEARCH_USER_AGENT : undefined,
+            extra_headers: {
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": `${request.languageCode},en;q=0.8`,
+            },
+          });
+          return {
+            ok: result.ok,
+            error: result.error,
+            message: result.message,
+            status: result.status,
+            final_url: result.final_url,
+            html: result.html,
+            body_text: result.body_text,
+            title: result.title,
+          };
+        });
+        const firstError = extraction.errors[0];
+        if (
+          extraction.page_count === 0 &&
           firstError &&
           ACCOUNT_LEVEL_ERRORS.has(firstError.error)
         ) {

@@ -25,6 +25,9 @@ export function ToolRunner({ slug }: { slug: string }) {
   if (slug === "rss-feed-reader") {
     return <RssFeedReaderRunner slug={slug} />;
   }
+  if (slug === "google-search-results") {
+    return <GoogleSearchResultsRunner slug={slug} />;
+  }
   if (slug === "website-logo-extractor") {
     return <WebsiteLogoExtractorRunner slug={slug} />;
   }
@@ -511,6 +514,160 @@ function RssFeedReaderRunner({ slug }: { slug: string }) {
 
           <Button type="submit" disabled={state.status === "running"}>
             {state.status === "running" ? "Running..." : "Read feeds"}
+          </Button>
+        </form>
+
+        {state.status === "error" ? (
+          <p className="rounded-lg border border-destructive/40 px-3 py-2 text-sm text-destructive">
+            {state.message}
+          </p>
+        ) : null}
+
+        {state.status === "done" ? (
+          <pre className="max-h-[32rem] overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-xs leading-relaxed">
+            {JSON.stringify(state.body, null, 2)}
+          </pre>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function GoogleSearchResultsRunner({ slug }: { slug: string }) {
+  const [state, setState] = useState<RunState>({ status: "idle" });
+  const [mobileResults, setMobileResults] = useState(false);
+
+  async function runTool(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setState({ status: "running" });
+    const form = new FormData(event.currentTarget);
+    const queries = String(form.get("queries") ?? "")
+      .split(/\r?\n/)
+      .map((query) => query.trim())
+      .filter(Boolean);
+
+    const payload = {
+      queries,
+      countryCode: String(form.get("countryCode") || "us"),
+      languageCode: String(form.get("languageCode") || "en"),
+      googleDomain: String(form.get("googleDomain") || "google.com"),
+      maxPagesPerQuery: Number(form.get("maxPagesPerQuery") || 1),
+      resultsPerPage: Number(form.get("resultsPerPage") || 10),
+      strategy: String(form.get("strategy") || "browser"),
+      mobileResults,
+    };
+
+    try {
+      const response = await fetch(`/api/tools/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: body?.error ?? `Run failed (${response.status})`,
+        });
+        return;
+      }
+      setState({ status: "done", body });
+    } catch {
+      setState({ status: "error", message: "Run failed. Check your connection." });
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Run</CardTitle>
+        <CardDescription>
+          Extract organic, sponsored, People Also Ask, and related query sections.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={runTool} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="queries">Search terms or Google search URLs</Label>
+            <textarea
+              id="queries"
+              name="queries"
+              required
+              rows={4}
+              className="min-h-28 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              placeholder="best crm software&#10;https://www.google.com/search?q=headless+browser+api"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="countryCode">Country</Label>
+              <Input
+                id="countryCode"
+                name="countryCode"
+                defaultValue="us"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="languageCode">Language</Label>
+              <Input id="languageCode" name="languageCode" defaultValue="en" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="googleDomain">Domain</Label>
+              <Input id="googleDomain" name="googleDomain" defaultValue="google.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPagesPerQuery">Pages per query</Label>
+              <Input
+                id="maxPagesPerQuery"
+                name="maxPagesPerQuery"
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={1}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="resultsPerPage">Results per page</Label>
+              <Input
+                id="resultsPerPage"
+                name="resultsPerPage"
+                type="number"
+                min={1}
+                max={100}
+                defaultValue={10}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="strategy">Strategy</Label>
+              <select
+                id="strategy"
+                name="strategy"
+                defaultValue="browser"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="browser">Browser</option>
+                <option value="auto">Auto</option>
+                <option value="http">HTTP</option>
+              </select>
+            </div>
+            <label className="flex min-h-8 items-center gap-2 self-end text-sm">
+              <input
+                name="mobileResults"
+                type="checkbox"
+                checked={mobileResults}
+                onChange={(event) => setMobileResults(event.currentTarget.checked)}
+                className="size-4 accent-primary"
+              />
+              Mobile results
+            </label>
+          </div>
+
+          <Button type="submit" disabled={state.status === "running"}>
+            {state.status === "running" ? "Running..." : "Extract search results"}
           </Button>
         </form>
 

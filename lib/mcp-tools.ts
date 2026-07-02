@@ -2,6 +2,7 @@ import { WEBSITE_CONTENT_CRAWLER_METADATA } from "@/tools/website-content-crawle
 import { WEBSITE_LOGO_EXTRACTOR_METADATA } from "@/tools/website-logo-extractor/metadata";
 import { SITEMAP_URL_EXTRACTOR_METADATA } from "@/tools/sitemap-url-extractor/metadata";
 import { RSS_FEED_READER_METADATA } from "@/tools/rss-feed-reader/metadata";
+import { GOOGLE_SEARCH_RESULTS_METADATA } from "@/tools/google-search-results/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -77,6 +78,11 @@ export const MCP_TOOLS = [
     name: RSS_FEED_READER_METADATA.mcpName,
     title: RSS_FEED_READER_METADATA.title,
     desc: RSS_FEED_READER_METADATA.description,
+  },
+  {
+    name: GOOGLE_SEARCH_RESULTS_METADATA.mcpName,
+    title: GOOGLE_SEARCH_RESULTS_METADATA.title,
+    desc: GOOGLE_SEARCH_RESULTS_METADATA.description,
   },
 ] as const;
 
