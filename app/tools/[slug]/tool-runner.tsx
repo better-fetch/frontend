@@ -49,6 +49,9 @@ export function ToolRunner({ slug }: { slug: string }) {
   if (slug === "meta-ads-library") {
     return <MetaAdsLibraryRunner slug={slug} />;
   }
+  if (slug === "x-profile-posts") {
+    return <XProfilePostsRunner slug={slug} />;
+  }
   if (slug === "website-logo-extractor") {
     return <WebsiteLogoExtractorRunner slug={slug} />;
   }
@@ -1624,6 +1627,155 @@ function MetaAdsLibraryRunner({ slug }: { slug: string }) {
 
           <Button type="submit" disabled={state.status === "running"}>
             {state.status === "running" ? "Running..." : "Extract ads"}
+          </Button>
+        </form>
+
+        {state.status === "error" ? (
+          <p className="rounded-lg border border-destructive/40 px-3 py-2 text-sm text-destructive">
+            {state.message}
+          </p>
+        ) : null}
+
+        {state.status === "done" ? (
+          <pre className="max-h-[32rem] overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-xs leading-relaxed">
+            {JSON.stringify(state.body, null, 2)}
+          </pre>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function XProfilePostsRunner({ slug }: { slug: string }) {
+  const [state, setState] = useState<RunState>({ status: "idle" });
+  const [includeReplies, setIncludeReplies] = useState(false);
+
+  async function runTool(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setState({ status: "running" });
+    const form = new FormData(event.currentTarget);
+    const targets = String(form.get("targets") ?? "")
+      .split(/\r?\n/)
+      .map((target) => target.trim())
+      .filter(Boolean);
+
+    const payload = {
+      targets,
+      sort: String(form.get("sort") || "latest"),
+      maxPostsPerTarget: Number(form.get("maxPostsPerTarget") || 25),
+      includeReplies,
+      countryCode: String(form.get("countryCode") || "us"),
+      languageCode: String(form.get("languageCode") || "en"),
+      strategy: String(form.get("strategy") || "browser"),
+    };
+
+    try {
+      const response = await fetch(`/api/tools/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: body?.error ?? `Run failed (${response.status})`,
+        });
+        return;
+      }
+      setState({ status: "done", body });
+    } catch {
+      setState({ status: "error", message: "Run failed. Check your connection." });
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Run</CardTitle>
+        <CardDescription>
+          Extract structured profile and post rows from public X pages.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={runTool} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="targets">X handles, URLs, hashtags, or searches</Label>
+            <textarea
+              id="targets"
+              name="targets"
+              required
+              rows={4}
+              className="min-h-28 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              placeholder="@betterfetch&#10;https://x.com/user/status/...&#10;#marketresearch&#10;customer research tools"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="sort">Sort</Label>
+              <select
+                id="sort"
+                name="sort"
+                defaultValue="latest"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="latest">Latest</option>
+                <option value="top">Top</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPostsPerTarget">Max posts</Label>
+              <Input
+                id="maxPostsPerTarget"
+                name="maxPostsPerTarget"
+                type="number"
+                min={1}
+                max={500}
+                defaultValue={25}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="countryCode">Country</Label>
+              <Input
+                id="countryCode"
+                name="countryCode"
+                defaultValue="us"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="languageCode">Language</Label>
+              <Input id="languageCode" name="languageCode" defaultValue="en" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="strategy">Strategy</Label>
+              <select
+                id="strategy"
+                name="strategy"
+                defaultValue="browser"
+                className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="browser">Browser</option>
+                <option value="auto">Auto</option>
+                <option value="http">HTTP</option>
+              </select>
+            </div>
+            <label className="flex min-h-8 items-center gap-2 self-end text-sm">
+              <input
+                name="includeReplies"
+                type="checkbox"
+                checked={includeReplies}
+                onChange={(event) => setIncludeReplies(event.currentTarget.checked)}
+                className="size-4 accent-primary"
+              />
+              Include replies
+            </label>
+          </div>
+
+          <Button type="submit" disabled={state.status === "running"}>
+            {state.status === "running" ? "Running..." : "Extract X data"}
           </Button>
         </form>
 

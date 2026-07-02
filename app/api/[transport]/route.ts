@@ -67,6 +67,11 @@ import {
   scrapeMetaAdsLibrary,
 } from "@/tools/meta-ads-library/runtime";
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
+import {
+  scrapeXProfilePosts,
+  X_PROFILE_POSTS_MCP_INPUT_SCHEMA,
+} from "@/tools/x-profile-posts/runtime";
+import { X_PROFILE_POSTS_METADATA } from "@/tools/x-profile-posts/metadata";
 
 // Remote MCP server (Streamable HTTP) at /api/mcp — the endpoint users add
 // to Claude, Claude Cowork, or Claude Desktop as a custom connector. Auth
@@ -1094,6 +1099,53 @@ const handler = createMcpHandler(
       },
       async (args, extra) => {
         const extraction = await scrapeMetaAdsLibrary(args, async (request) => {
+          const result = await callFetchApi(extra.authInfo!.token, {
+            url: request.url,
+            timeout_ms: request.timeoutSecs * 1000,
+            strategy: request.strategy,
+            country: request.countryCode,
+            cache_ttl_ms: 30_000,
+            return_response_text: true,
+            include_html: true,
+            wait_ms: request.strategy === "http" ? undefined : 1500,
+            extra_headers: {
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": `${request.languageCode},en;q=0.8`,
+            },
+          });
+          return {
+            ok: result.ok,
+            error: result.error,
+            message: result.message,
+            status: result.status,
+            final_url: result.final_url,
+            html: result.html,
+            body_text: result.body_text,
+            title: result.title,
+          };
+        });
+        const firstError = extraction.errors[0];
+        if (
+          extraction.item_count === 0 &&
+          firstError &&
+          ACCOUNT_LEVEL_ERRORS.has(firstError.error)
+        ) {
+          return toolError({ error: firstError.error, message: firstError.error });
+        }
+        return asText(extraction);
+      },
+    );
+
+    server.registerTool(
+      X_PROFILE_POSTS_METADATA.mcpName,
+      {
+        title: X_PROFILE_POSTS_METADATA.title,
+        description: MCP_TOOL_DESCRIPTIONS.x_profile_posts,
+        inputSchema: X_PROFILE_POSTS_MCP_INPUT_SCHEMA,
+      },
+      async (args, extra) => {
+        const extraction = await scrapeXProfilePosts(args, async (request) => {
           const result = await callFetchApi(extra.authInfo!.token, {
             url: request.url,
             timeout_ms: request.timeoutSecs * 1000,

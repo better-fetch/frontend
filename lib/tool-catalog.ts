@@ -10,6 +10,7 @@ import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/me
 import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
 import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
+import { X_PROFILE_POSTS_METADATA } from "@/tools/x-profile-posts/metadata";
 
 export const MARKETPLACE_TOOLS = [
   WEBSITE_CONTENT_CRAWLER_METADATA,
@@ -24,6 +25,7 @@ export const MARKETPLACE_TOOLS = [
   INSTAGRAM_PROFILE_POSTS_METADATA,
   TIKTOK_PROFILE_VIDEOS_METADATA,
   META_ADS_LIBRARY_METADATA,
+  X_PROFILE_POSTS_METADATA,
 ] as const;
 
 export type MarketplaceTool = (typeof MARKETPLACE_TOOLS)[number];

@@ -10,6 +10,7 @@ import { REDDIT_POSTS_COMMENTS_METADATA } from "@/tools/reddit-posts-comments/me
 import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-posts/metadata";
 import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
+import { X_PROFILE_POSTS_METADATA } from "@/tools/x-profile-posts/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -125,6 +126,11 @@ export const MCP_TOOLS = [
     name: META_ADS_LIBRARY_METADATA.mcpName,
     title: META_ADS_LIBRARY_METADATA.title,
     desc: META_ADS_LIBRARY_METADATA.description,
+  },
+  {
+    name: X_PROFILE_POSTS_METADATA.mcpName,
+    title: X_PROFILE_POSTS_METADATA.title,
+    desc: X_PROFILE_POSTS_METADATA.description,
   },
 ] as const;
 
