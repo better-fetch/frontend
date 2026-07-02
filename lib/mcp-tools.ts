@@ -11,6 +11,7 @@ import { INSTAGRAM_PROFILE_POSTS_METADATA } from "@/tools/instagram-profile-post
 import { TIKTOK_PROFILE_VIDEOS_METADATA } from "@/tools/tiktok-profile-videos/metadata";
 import { META_ADS_LIBRARY_METADATA } from "@/tools/meta-ads-library/metadata";
 import { X_PROFILE_POSTS_METADATA } from "@/tools/x-profile-posts/metadata";
+import { FACEBOOK_PAGES_METADATA } from "@/tools/facebook-pages/metadata";
 
 export const MCP_TOOLS = [
   {
@@ -131,6 +132,11 @@ export const MCP_TOOLS = [
     name: X_PROFILE_POSTS_METADATA.mcpName,
     title: X_PROFILE_POSTS_METADATA.title,
     desc: X_PROFILE_POSTS_METADATA.description,
+  },
+  {
+    name: FACEBOOK_PAGES_METADATA.mcpName,
+    title: FACEBOOK_PAGES_METADATA.title,
+    desc: FACEBOOK_PAGES_METADATA.description,
   },
 ] as const;
 
