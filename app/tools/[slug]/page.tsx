@@ -93,7 +93,7 @@ export default async function ToolDetailPage({
             </CardContent>
             <CardFooter>
               <span className="text-xs text-muted-foreground">
-                Discovered {tool.discoveredAt}
+                Released {tool.releasedAt}
               </span>
             </CardFooter>
           </Card>

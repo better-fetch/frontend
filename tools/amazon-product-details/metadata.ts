@@ -2,7 +2,7 @@ export const AMAZON_PRODUCT_DETAILS_METADATA = {
   slug: "amazon-product-details",
   mcpName: "amazon_product_details",
   title: "Amazon Product Details",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["E-commerce", "Price monitoring", "Market research"],

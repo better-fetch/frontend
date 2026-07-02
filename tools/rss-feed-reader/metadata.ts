@@ -2,7 +2,7 @@ export const RSS_FEED_READER_METADATA = {
   slug: "rss-feed-reader",
   mcpName: "rss_feed_reader",
   title: "RSS Feed Reader",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["Developer tools"],

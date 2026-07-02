@@ -2,7 +2,7 @@ export const WEBSITE_CONTENT_CRAWLER_METADATA = {
   slug: "website-content-crawler",
   mcpName: "website_content_crawler",
   title: "Website Content Crawler",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["AI", "Developer tools"],

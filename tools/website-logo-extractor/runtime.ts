@@ -113,7 +113,7 @@ export async function extractWebsiteLogos(
 
   return {
     ok: results.every((result) => !result.error),
-    actor: "website_logo_extractor",
+    tool: "website_logo_extractor",
     item_count: results.length,
     results,
   };

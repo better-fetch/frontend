@@ -235,7 +235,7 @@ export async function scrapeGoogleSearchResults(
 
   return {
     ok: errors.length === 0,
-    actor: "google_search_results",
+    tool: "google_search_results",
     page_count: records.length,
     item_count: itemCount,
     results: records,

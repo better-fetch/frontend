@@ -174,7 +174,7 @@ export async function readRssFeeds(
 
   return {
     ok: errors.length === 0,
-    actor: "rss_feed_reader",
+    tool: "rss_feed_reader",
     item_count: items.length,
     items,
     errors,

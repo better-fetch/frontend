@@ -2,7 +2,7 @@ export const GOOGLE_SEARCH_RESULTS_METADATA = {
   slug: "google-search-results",
   mcpName: "google_search_results",
   title: "Google Search Results",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["SEO tools", "Market research", "Lead generation"],

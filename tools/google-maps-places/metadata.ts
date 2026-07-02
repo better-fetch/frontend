@@ -2,7 +2,7 @@ export const GOOGLE_MAPS_PLACES_METADATA = {
   slug: "google-maps-places",
   mcpName: "google_maps_places",
   title: "Google Maps Places",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["Lead generation", "Market research", "Local SEO"],

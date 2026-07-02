@@ -2,7 +2,7 @@ export const WEBSITE_LOGO_EXTRACTOR_METADATA = {
   slug: "website-logo-extractor",
   mcpName: "website_logo_extractor",
   title: "Website Logo Extractor",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["Automation", "Marketing"],

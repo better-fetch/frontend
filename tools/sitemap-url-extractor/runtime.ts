@@ -132,7 +132,7 @@ export async function extractSitemapUrls(
 
   return {
     ok: state.errors.length === 0,
-    actor: "sitemap_url_extractor",
+    tool: "sitemap_url_extractor",
     item_count: state.records.length,
     items: state.records,
     errors: state.errors,

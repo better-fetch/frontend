@@ -206,7 +206,7 @@ export async function scrapeAmazonProductDetails(
 
   return {
     ok: errors.length === 0,
-    actor: "amazon_product_details",
+    tool: "amazon_product_details",
     product_count: results.length,
     item_count: results.length,
     results,

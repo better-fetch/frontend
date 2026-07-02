@@ -2,7 +2,7 @@ export const SITEMAP_URL_EXTRACTOR_METADATA = {
   slug: "sitemap-url-extractor",
   mcpName: "sitemap_url_extractor",
   title: "Sitemap URL Extractor",
-  discoveredAt: "2026-07-02",
+  releasedAt: "2026-07-02",
   pricing: "Metered Better Fetch usage",
   delivery: "Dashboard and MCP",
   categories: ["SEO tools", "Developer tools"],

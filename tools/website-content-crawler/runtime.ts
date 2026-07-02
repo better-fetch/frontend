@@ -306,7 +306,7 @@ export async function crawlWebsiteContent(
 
   return {
     ok: errors.length === 0,
-    actor: "website_content_crawler",
+    tool: "website_content_crawler",
     fetched: attempted,
     item_count: pages.length,
     error_count: errors.length,

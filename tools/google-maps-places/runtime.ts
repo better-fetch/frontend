@@ -189,7 +189,7 @@ export async function scrapeGoogleMapsPlaces(
 
   return {
     ok: errors.length === 0,
-    actor: "google_maps_places",
+    tool: "google_maps_places",
     search_count: results.length,
     item_count: results.reduce((total, result) => total + result.places.length, 0),
     results,
