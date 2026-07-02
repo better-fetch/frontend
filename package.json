@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test tools/**/*.test.ts",
     "lint": "eslint"
   },
   "dependencies": {
@@ -18,7 +17,6 @@
     "@supabase/supabase-js": "^2.108.1",
     "@tabler/icons-react": "^3.44.0",
     "@tailwindcss/postcss": "^4.3.0",
-    "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
@@ -44,7 +42,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
-    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

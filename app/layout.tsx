@@ -87,9 +87,6 @@ export default async function RootLayout({
                 <Link href="/mcp">MCP</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/tools">Tools</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
                 <Link href="/plugin">Plugin</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
@@ -143,9 +140,6 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/mcp" className="hover:text-foreground">
                   MCP
-                </Link>
-                <Link href="/tools" className="hover:text-foreground">
-                  Tools
                 </Link>
                 <Link href="/plugin" className="hover:text-foreground">
                   Plugin
