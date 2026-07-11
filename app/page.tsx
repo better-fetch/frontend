@@ -60,7 +60,6 @@ export default async function Home({
   return (
     <div className="space-y-24">
       <section className="relative space-y-8 overflow-hidden pt-8 text-center sm:pt-14">
-        <div className="pointer-events-none absolute inset-x-1/4 top-0 -z-10 h-64 rounded-full bg-primary/10 blur-3xl" />
         <div className="space-y-5">
           <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
             The web data layer for AI

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
 import { CopyField } from "@/components/copy-button";
@@ -26,11 +27,27 @@ export function AgentInstallTabs({ className }: { className?: string }) {
       defaultValue="claude"
       className={cn("mx-auto w-full max-w-2xl", className)}
     >
-      <TabsList className="grid h-11 w-full grid-cols-2 p-1">
-        <TabsTrigger value="claude" className="text-sm">
+      <TabsList className="h-11 w-fit justify-start p-1">
+        <TabsTrigger value="claude" className="flex-none gap-2 px-4 text-sm">
+          <Image
+            src="/claude-symbol.svg"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden
+            className="size-[18px]"
+          />
           Add to Claude
         </TabsTrigger>
-        <TabsTrigger value="chatgpt" className="text-sm">
+        <TabsTrigger value="chatgpt" className="flex-none gap-2 px-4 text-sm">
+          <Image
+            src="/chatgpt-symbol.svg"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden
+            className="size-[18px] dark:invert"
+          />
           Add to ChatGPT
         </TabsTrigger>
       </TabsList>
