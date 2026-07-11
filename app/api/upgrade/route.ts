@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isTier, priceIdFor } from "@/lib/plans";
+import { isPaidTier, priceIdFor } from "@/lib/plans";
 import { absoluteUrl } from "@/lib/site";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   const form = await request.formData();
   const tier = String(form.get("tier") ?? "");
-  if (!isTier(tier) || tier === "free") {
+  if (!isPaidTier(tier)) {
     return NextResponse.json({ error: "invalid target tier" }, { status: 400 });
   }
 

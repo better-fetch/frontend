@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isTier, priceIdFor } from "@/lib/plans";
+import { isPaidTier, priceIdFor } from "@/lib/plans";
 import { absoluteUrl } from "@/lib/site";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,19 +17,25 @@ export async function POST(request: NextRequest) {
 
   const form = await request.formData();
   const tier = String(form.get("tier") ?? "");
-  if (!isTier(tier)) {
+  // The free tier is provisioned at signup, never through checkout.
+  if (!isPaidTier(tier)) {
     return NextResponse.json({ error: "unknown tier" }, { status: 400 });
   }
 
   const admin = createAdminClient();
   const { data: sub } = await admin
     .from("subscriptions")
-    .select("stripe_customer_id, status")
+    .select("stripe_customer_id, stripe_subscription_id, status")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Already subscribed → plan changes go through the billing portal.
-  if (sub && ["active", "trialing", "past_due"].includes(sub.status)) {
+  // Already on a paid Stripe subscription → plan changes go through the
+  // billing portal. Cardless free rows (active, no Stripe sub) fall through
+  // to a fresh checkout.
+  if (
+    sub?.stripe_subscription_id &&
+    ["active", "trialing", "past_due"].includes(sub.status)
+  ) {
     return NextResponse.redirect(absoluteUrl("/keys", request), 303);
   }
 
@@ -59,9 +65,6 @@ export async function POST(request: NextRequest) {
     client_reference_id: user.id,
     line_items: [{ price: priceIdFor(tier), quantity: 1 }],
     subscription_data: { metadata: { user_id: user.id } },
-    // Stripe skips the card form on $0 totals by default; the free tier
-    // exists precisely to validate a real card, so always collect one.
-    payment_method_collection: "always",
     success_url: `${origin}/keys?checkout=success`,
     cancel_url: `${origin}/`,
   });

@@ -1,15 +1,21 @@
 // Root llms.txt (llmstxt.org spec): a curated, link-based map for LLM agents.
 import { MCP_TOOLS } from "@/lib/mcp-tools";
+import {
+  categoryLabel,
+  getToolCategories,
+  toolMetaDescription,
+} from "@/lib/tool-display";
+import { getLiveTools } from "@/lib/tools-registry";
 
 const MCP_TOOL_LIST = MCP_TOOLS.map((tool) => `\`${tool.name}\``).join(", ");
 
-const BODY = `# Better Fetch
+const body = (liveToolList: string) => `# Better Fetch
 
-> Better Fetch is an HTTP API that fetches any URL through a real, stealth Chromium browser — JavaScript rendering, browser geo-emulation, account-scoped sticky sessions, encrypted portable cookie/localStorage snapshots, screenshots, network and stream capture, and Cloudflare/DataDome cookie collection when the target issues those cookies, in one call. Base URL: https://api.betterfetch.co (endpoints under /v1). Auth: bearer token ("bf_..." key); fetch calls are metered against a monthly plan quota and stored browser sessions have plan limits.
+> Better Fetch is the web data layer for AI agents: a hosted MCP connector that gives Claude, ChatGPT, Codex, and other clients reliable retrieval through direct HTTP, real Chromium, persistent browser sessions, structured extraction, API discovery, screenshots, and optional residential routing. The same engine is available at https://api.betterfetch.co/v1 for direct API use.
 
-Use a two-letter \`country\` for browser geo-emulation: when \`geoip\` is true and \`locale\` / \`timezone\` are omitted, Better Fetch applies representative defaults for that country. It does not change network egress IP or bypass IP-based geo-restrictions. Use a \`session\` to reuse one account-scoped warm browser context, fingerprint, cookies, and localStorage. Named sessions also sync encrypted cookie/localStorage snapshots so another backend machine can hydrate the browser state. A call is counted when accepted, regardless of fetch outcome.
+Use a two-letter \`country\` for coherent browser locale/timezone defaults. It changes network egress only when \`proxy\` is \`auto\` or \`residential\`. Use \`proxy: "auto"\` for the cost-aware path: direct first, residential only after a block. Use a stable \`session\` to reuse one account-scoped warm browser context, fingerprint, cookies, and localStorage. A call is counted when accepted, regardless of fetch outcome.
 
-Check \`GET /v1/health?geo=1&country=us\` to see the country defaults. \`GET /v1/health?proxy=1\` is a deprecated no-op diagnostic; managed proxy routing has been removed.
+Check \`GET /v1/health?geo=1&country=us\` to see browser identity defaults and current managed-proxy availability.
 
 Use \`cache_ttl_ms\` only for explicit short scraper bursts that repeat the same synchronous fetch payload. It defaults to 0/off, is best effort per API worker, and \`cache_status\` reports \`bypass\`, \`miss\`, \`hit\`, or \`coalesced\`.
 
@@ -22,9 +28,10 @@ Session names are account-scoped but canonicalized for backend routing: only let
 
 ## Integrations
 
-- [MCP connector](https://betterfetch.co/api/mcp): remote Model Context Protocol server (Streamable HTTP). Supports OAuth sign-in (add as a custom connector in Claude / Claude Cowork / Claude Desktop) or "Authorization: Bearer <your-bf-key>"
+- [MCP setup](https://betterfetch.co/mcp): add the Streamable HTTP server to Claude or ChatGPT desktop and sign in with OAuth; Codex CLI/IDE use the same endpoint and OAuth flow. API-key auth remains available for unattended clients.
 - MCP tools: ${MCP_TOOL_LIST}
 - [Claude Code plugin marketplace](https://github.com/better-fetch/claude-plugins): skills + MCP server; /plugin marketplace add better-fetch/claude-plugins
+- [Tool catalogue](https://betterfetch.co/tools): ready-made tools built on the engine. Over MCP, call \`search_tools\` then \`run_tool\`; over REST, POST https://betterfetch.co/api/tools/{name}/run${liveToolList}
 
 ## Optional
 
@@ -33,9 +40,31 @@ Session names are account-scoped but canonicalized for backend routing: only let
 `;
 
 export const dynamic = "force-static";
+// Re-render periodically so newly published marketplace tools show up.
+export const revalidate = 3600;
 
-export function GET() {
-  return new Response(BODY, {
+export async function GET() {
+  const tools = await getLiveTools({ force: true }).catch(() => []);
+  const categories = getToolCategories(tools);
+  const liveToolList = categories.length
+    ? `\n\n## Live marketplace tools\n\n${categories
+        .map(
+          (category) =>
+            `### ${categoryLabel(category.slug)}\n` +
+            category.tools
+              .map(
+                (tool) =>
+                  `- [${tool.title}](https://betterfetch.co/tools/${tool.name}) (` +
+                  `\`${tool.name}\`, ${tool.credits_estimate} credit${tool.credits_estimate === 1 ? "" : "s"}/run): ` +
+                  `${toolMetaDescription(tool)} ` +
+                  `MCP: \`run_tool\` with name \`${tool.name}\`; REST: \`POST https://betterfetch.co/api/tools/${tool.name}/run\`; ` +
+                  `tool llms.txt: https://betterfetch.co/tools/${tool.name}/llms.txt`,
+              )
+              .join("\n"),
+        )
+        .join("\n\n")}`
+    : "";
+  return new Response(body(liveToolList), {
     headers: { "content-type": "text/plain; charset=utf-8" },
   });
 }

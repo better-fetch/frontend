@@ -6,18 +6,20 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Button } from "@/components/ui/button";
 import { getClaims } from "@/lib/supabase/server";
+import { getPopularTools, getToolCategories } from "@/lib/tool-display";
+import { getLiveTools } from "@/lib/tools-registry";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 const DESCRIPTION =
-  "Fetch any URL through a real browser. JavaScript rendering, browser geo-emulation, sticky sessions, screenshots, and clearance-cookie helpers — one API call.";
+  "Give Claude and ChatGPT reliable access to live web data. One hosted MCP connector for JavaScript rendering, structured extraction, browser sessions, API discovery, screenshots, and regional routing.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://betterfetch.co"),
   title: {
-    default: "Better Fetch — browser-grade URL fetching API",
+    default: "Better Fetch — the web data layer for AI",
     template: "%s — Better Fetch",
   },
   description: DESCRIPTION,
@@ -32,25 +34,26 @@ export const metadata: Metadata = {
   },
   applicationName: "Better Fetch",
   keywords: [
-    "browser fetch API",
-    "headless browser API",
-    "web scraping API",
+    "MCP web scraping",
+    "Claude MCP",
+    "ChatGPT MCP",
+    "AI web data",
+    "agent web scraping",
     "JavaScript rendering",
-    "Cloudflare bypass",
-    "browser automation API",
-    "screenshot API",
+    "structured web extraction",
+    "browser sessions",
   ],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "Better Fetch",
-    title: "Better Fetch — browser-grade URL fetching API",
+    title: "Better Fetch — the web data layer for AI",
     description: DESCRIPTION,
     url: "https://betterfetch.co",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Better Fetch — browser-grade URL fetching API",
+    title: "Better Fetch — the web data layer for AI",
     description: DESCRIPTION,
   },
 };
@@ -60,7 +63,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const signedIn = Boolean(await getClaims());
+  const [signedIn, tools] = await Promise.all([
+    getClaims().then(Boolean),
+    getLiveTools({ force: true }).catch(() => []),
+  ]);
+  const categories = getToolCategories(tools);
+  const popularTools = getPopularTools(tools, 6);
 
   return (
     <html
@@ -80,14 +88,52 @@ export default async function RootLayout({
               />
             </Link>
             <nav className="flex items-center gap-1">
+              <div className="group/tools relative">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/tools" aria-haspopup={categories.length ? "menu" : undefined}>
+                    Tools
+                  </Link>
+                </Button>
+                {categories.length ? (
+                  <div className="invisible absolute right-0 top-full w-[min(38rem,calc(100vw-2rem))] pt-2 opacity-0 transition group-hover/tools:visible group-hover/tools:opacity-100 group-focus-within/tools:visible group-focus-within/tools:opacity-100">
+                    <div className="grid gap-4 rounded-lg border bg-popover p-4 text-left shadow-xl sm:grid-cols-[1fr_1.2fr]">
+                      <div className="space-y-2">
+                        {categories.map((category) => (
+                          <Link
+                            key={category.slug}
+                            href={`/tools?category=${encodeURIComponent(category.slug)}`}
+                            className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <span>{category.label}</span>
+                            <span className="text-xs">{category.count}</span>
+                          </Link>
+                        ))}
+                      </div>
+                      {popularTools.length ? (
+                        <div className="space-y-2 border-t pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+                          {popularTools.map((tool) => (
+                            <Link
+                              key={tool.id}
+                              href={`/tools/${tool.name}`}
+                              className="block rounded-md px-2 py-1.5 hover:bg-muted"
+                            >
+                              <span className="block text-sm font-medium">{tool.title}</span>
+                              <span className="line-clamp-1 text-xs text-muted-foreground">
+                                {tool.description}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/docs">Docs</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/mcp">MCP</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/plugin">Plugin</Link>
+                <Link href="/mcp">Connect</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/blog">Blog</Link>
@@ -116,17 +162,17 @@ export default async function RootLayout({
           <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-12 text-center">
             <div className="space-y-1">
               <p className="text-lg font-semibold tracking-tight">
-                {signedIn ? "Back to your keys?" : "Ready to unlock the web?"}
+                {signedIn ? "Back to your keys?" : "Give your AI a better fetch."}
               </p>
               <p className="text-sm text-muted-foreground">
                 {signedIn
                   ? "Keys, usage, and your plan — all in one place."
-                  : "50 free browser-grade calls a month. One API call, any URL."}
+                  : "Connect Claude or ChatGPT in minutes. Start with 50 free calls a month."}
               </p>
             </div>
             <Button asChild>
-              <Link href={signedIn ? "/keys" : "/login"}>
-                {signedIn ? "Open dashboard" : "Get started free"}
+              <Link href={signedIn ? "/keys" : "/mcp"}>
+                {signedIn ? "Open dashboard" : "Connect your AI"}
               </Link>
             </Button>
             <div className="flex w-full flex-col items-center justify-between gap-4 border-t pt-6 sm:flex-row">
@@ -135,14 +181,14 @@ export default async function RootLayout({
                 <span>© {new Date().getFullYear()} Better Fetch</span>
               </div>
               <nav className="flex gap-4 text-sm text-muted-foreground">
+                <Link href="/tools" className="hover:text-foreground">
+                  Tools
+                </Link>
                 <Link href="/docs" className="hover:text-foreground">
                   Docs
                 </Link>
                 <Link href="/mcp" className="hover:text-foreground">
-                  MCP
-                </Link>
-                <Link href="/plugin" className="hover:text-foreground">
-                  Plugin
+                  Connect
                 </Link>
                 <Link href="/blog" className="hover:text-foreground">
                   Blog

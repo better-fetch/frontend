@@ -60,7 +60,7 @@ export const REQUEST_FIELDS: Field[] = [
     type: "boolean",
     default: "false",
     description:
-      "Include the raw response body in body_text. JSON responses include it automatically. When set with a non-HTML URL, this also participates in auto strategy selection.",
+      "Include the raw response body in body_text. JSON responses include it automatically. When set with an API-shaped URL (a path with no .html/.php-style extension), this also participates in auto strategy selection and can auto-select browser JSON mode — unless screenshot, full_page, or wait_selector is also set, which keeps the request on the rendered-page path. Site-root URLs with no path (https://example.com) are always treated as pages, never APIs.",
   },
   {
     name: "include_html",
@@ -163,7 +163,7 @@ export const REQUEST_FIELDS: Field[] = [
     type: "boolean",
     default: "false",
     description:
-      "Include a PNG screenshot encoded as base64. Screenshots can make responses much larger, so request them only when needed.",
+      "Include a PNG screenshot encoded as base64. Works together with return_response_text: requesting a screenshot keeps the request on the rendered-page path, so both come back. Only explicit json_mode: true disables screenshots. Screenshots can make responses much larger, so request them only when needed.",
   },
   {
     name: "full_page",
@@ -176,6 +176,13 @@ export const REQUEST_FIELDS: Field[] = [
     type: "string",
     description:
       "Two-letter country code for browser geo-emulation, e.g. us, gb, de, au, ca. When geoip is true and locale/timezone are unset, Better Fetch applies representative browser defaults for that country. This does not change network egress IP.",
+  },
+  {
+    name: "proxy",
+    type: '"none" | "auto" | "residential"',
+    default: '"none"',
+    description:
+      "Network routing mode. none uses Better Fetch datacenter egress. auto starts direct and escalates blocked retries through residential egress. residential routes every attempt through residential egress. When country is also set, proxied attempts use that country for the exit and browser identity.",
   },
   {
     name: "session",
@@ -229,7 +236,7 @@ export const REQUEST_FIELDS: Field[] = [
     type: "boolean",
     default: "auto",
     description:
-      "Fetch via an in-page browser fetch() call instead of a top-level browser navigation. Sends Sec-Fetch-Mode: cors and a natural Referer from the URL's origin. Set explicitly only when strategy=browser or auto should keep browser semantics; plain auto uses direct HTTP first.",
+      "Fetch via an in-page browser fetch() call instead of a top-level browser navigation. Sends Sec-Fetch-Mode: cors and a natural Referer from the URL's origin. Auto-detected from Accept: application/json or from return_response_text on an API-shaped URL — but never when screenshot, full_page, or wait_selector is set (those signal a rendered page), and never for site-root URLs with no path. An explicit true/false always wins; note screenshots are unavailable in json_mode.",
   },
 ];
 
@@ -243,7 +250,8 @@ export const RESPONSE_FIELDS: Field[] = [
   {
     name: "status",
     type: "number | null",
-    description: "HTTP status from the target response (navigation or in-page fetch).",
+    description:
+      "HTTP status from the target response (navigation or in-page fetch). On challenge-fronted sites this can be stale: the challenge document may return 403/503, then the solved page renders into the same document while status keeps the original value. Use blocked, not status, as the success signal for browser fetches.",
   },
   {
     name: "final_url",
@@ -312,7 +320,8 @@ export const RESPONSE_FIELDS: Field[] = [
   {
     name: "screenshot_b64",
     type: "string | null",
-    description: "Base64-encoded PNG when screenshot is true; otherwise null.",
+    description:
+      "Base64-encoded PNG when screenshot is true; otherwise null. Always null in json_mode — in-page fetch() never renders the target as a page, which is why screenshot: true suppresses json_mode auto-detection.",
   },
   {
     name: "cf_clearance",
@@ -378,7 +387,7 @@ export const RESPONSE_FIELDS: Field[] = [
     name: "blocked",
     type: "boolean",
     description:
-      "true when the response looks like a bot wall or unsolved challenge — even when the target returns HTTP 200. A solved page that merely carries Turnstile DOM is not blocked.",
+      "true when the response looks like a bot wall or unsolved challenge — even when the target returns HTTP 200. The inverse also holds: a 403/503 whose rendered body is substantial real content with no live interstitial is a solved challenge and reports blocked: false. Trust blocked over status in both directions.",
   },
   {
     name: "block_reason",
@@ -719,12 +728,24 @@ export const GUIDES: Guide[] = [
       "When you fetch many URLs on one site in a single run — scanning dozens of markets on a bookmaker, paging through a listing, etc. — these habits avoid most blocks and connection timeouts.",
     points: [
       "Reuse one session per site for the whole run (and across runs) — e.g. session: \"skybet\". A warm session keeps a stable fingerprint and persisted cookies/localStorage that mark you as a returning visitor. Do not generate a fresh session name per URL or per run: each distinct name — and each distinct locale/timezone/user_agent value — is a separate stored session that counts against your plan limit and starts cold.",
-      "Use country only for browser identity defaults (gb for UK locale/timezone, au for Australian locale/timezone, etc.). It does not change network egress IP or bypass IP-based geo-restrictions.",
+      "Use country for coherent browser identity defaults (gb for UK locale/timezone, au for Australian locale/timezone, etc.). It changes network egress only when proxy is auto or residential.",
       "Leave user_agent, locale, and timezone unset unless the integration requires them, so country can apply coherent defaults. If you do set them, keep them byte-identical across every call for that session — changing them splits the warm pool into separate cold contexts.",
       "Pace the run: keep concurrency to a few in-flight requests and add a small jittered delay (1–3s) between calls. A sub-second burst of dozens of requests from one IP looks robotic and trips bot detection that can then poison the whole session.",
       "Prefer fast waits on browser pages: wait_until: \"domcontentloaded\" plus wait_selector over networkidle or long fixed waits. For JSON endpoints, set extra_headers {\"Accept\":\"application/json\"}; auto uses direct HTTP first, skips humanization, and returns parsed JSON faster.",
       "For JSON polling, use cache_ttl_ms for short identical bursts and cache longer-lived responses in your application. Reuse one session, shrink query params (per_page, include=), and poll only as often as the data actually changes.",
       "Handle responses defensively in your loop. If blocked is true, inspect block_reason, then pause and back off (5–10s) before continuing. Retry an individual 502 fetch_failed after a short backoff — sustained failures mean the target is pushing back. Keep timeout_ms moderate (45–60s).",
+    ],
+  },
+  {
+    id: "guide-marketplace-tools",
+    title: "Marketplace tools",
+    description:
+      "Ready-made tools built on the Better Fetch engine — structured extraction, monitoring, screenshots, and more — that you can run without writing fetch code yourself. Browse them at https://betterfetch.co/tools.",
+    points: [
+      "Each tool page documents its input/output schema, examples, and a playground to try it against your account.",
+      "Call search_tools from Claude, ChatGPT, Codex, or another MCP client to find the best live tool, then pass its exact name and input schema to run_tool. The catalogue stays searchable without flooding the default MCP surface.",
+      "Or call them over REST: POST https://betterfetch.co/api/tools/{name}/run with Authorization: Bearer bf_... and a JSON body of {\"input\": {...}}.",
+      "Tool runs are metered against your plan like direct fetch calls; each tool lists a ~credits-per-run estimate.",
     ],
   },
 ];
@@ -782,18 +803,19 @@ export const TIPS: string[] = [
   "Set strategy: browser when the target specifically requires in-page fetch/CORS semantics from a SPA origin; set strategy: http when you explicitly want raw HTTP and no browser-only features.",
   "When using json_mode, include a Referer header pointing to the site's app/SPA origin (e.g. \"https://app.example.com/\"). Better Fetch navigates to that origin first so CORS and Referer match what the API expects. Without a Referer, the URL's own origin is used.",
   "Large body responses (> 50 MB) are truncated in body-fetch strategies. Check body_truncated and body_bytes — reduce per_page or narrow the query if you need the complete body.",
-  "country is browser geo-emulation only: it sets representative locale/timezone defaults when geoip is true and explicit locale/timezone are omitted. It does not change egress IP.",
+  "country sets representative browser locale/timezone defaults when geoip is true and explicit values are omitted. It changes egress IP only when proxy is auto or residential.",
   "Check GET /v1/health?geo=1&country=us to see the country defaults Better Fetch will apply.",
   "Pass a session for hard targets: it enables an account-scoped warm pooled context, encrypted portable cookie/localStorage snapshots, and a stable fingerprint.",
   "Session names are canonicalized to letters and numbers for backend routing today; punctuation is ignored, so use clearly distinct alphanumeric names when you need separate sessions.",
   "Reuse the same session to keep browser cookies/localStorage across machines; use return_cookies plus cookies when you want caller-managed cookie replay.",
   "Use return_cf_clearance or return_datadome_cookie when you need a specific protection cookie; for DataDome, the Better Fetch session is usually the stronger reuse primitive because cookies can be bound to IP, fingerprint, and browser state.",
   "Stored session limits are plan-based: Free 1, Starter 10, Pro 50, Scale 250; named sessions expire after 7 idle days.",
-  "Requests without country skip the fresh-identity retry budget; when country is set, retries can rotate browser profile/fingerprint and escalate to headed mode, but egress IP stays the same.",
+  "Use proxy: auto for a cost-aware escalation path: the first attempt stays on datacenter egress and blocked retries move to residential routing. Use proxy: residential only when every attempt must use a regional residential exit.",
   "Check blocked and block_reason to detect bot walls even when the target returns HTTP 200. The attempts field is greater than 1 when the service retried — retries cover both blocks and transient navigation timeouts (net::ERR_TIMED_OUT).",
+  "A browser fetch can return status 403 with blocked: false — that is a solved challenge, not a failure. The 403 belongs to the original challenge document; the real page rendered into it afterward. Treat blocked: false plus rendered content as success.",
   "Leave user_agent, locale, and timezone unset unless required — they form part of a session's warm-context identity, so changing them splits the warm pool.",
   "First requests after a deploy can be slower while Chromium starts; reused session requests are served from a warm pool.",
-  "Do not send raw proxy credentials. Better Fetch does not currently provide managed proxy routing.",
+  "Do not send raw proxy credentials. Select none, auto, or residential with the proxy field; Better Fetch owns provider credentials and reports proxy_used in the result.",
   "Use POST /v1/jobs for long-running fetches or batch fan-out: it returns a job id immediately and runs the browser work asynchronously. Poll GET /v1/jobs/{id} for the result.",
   "Jobs run under a separate concurrency budget from synchronous /v1/fetch, so they never block real-time requests.",
 ];

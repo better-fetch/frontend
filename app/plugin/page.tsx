@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,7 +13,7 @@ import {
 export const metadata: Metadata = {
   title: "Claude Code plugin",
   description:
-    "Install the Better Fetch plugin for Claude Code: skills for page fetching, structured extraction, crawling, API discovery, screenshots, and bot-wall bypass, plus a scraper subagent and the MCP connector — added with one command.",
+    "Install Better Fetch retrieval skills and a scraper subagent for Claude Code. The plugin teaches cost-aware fetching, structured extraction, crawling, API discovery, screenshots, and block-aware escalation on top of the hosted MCP connector.",
   alternates: { canonical: "/plugin" },
 };
 
@@ -30,23 +30,10 @@ const SKILLS: { name: string; desc: string }[] = [
   { name: "discover-apis", desc: "Capture a page's network calls — with response previews — to find its internal APIs." },
   { name: "crawl-pages", desc: "Multi-page crawls: pagination, sitemaps, sticky sessions, polite pacing." },
   { name: "screenshot-page", desc: "Capture full-page or viewport screenshots." },
-  { name: "bypass-bot-walls", desc: "Attempt Cloudflare and bot-wall flows; collect cf_clearance tokens when issued." },
+  { name: "bypass-bot-walls", desc: "Classify block responses and escalate browser identity or routing deliberately; collect cf_clearance tokens when issued." },
   { name: "webfetch-fallback", desc: "Escalate automatically when a plain fetch comes back blocked, empty, or geo-walled." },
   { name: "usage", desc: "Check your plan, calls used, remaining quota, and stored browser session usage." },
 ];
-
-function CodeBlock({ children }: { children: string }) {
-  return (
-    <div className="relative">
-      <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-4 pr-12 font-mono text-xs leading-relaxed">
-        {children}
-      </pre>
-      <div className="absolute right-2 top-2">
-        <CopyButton value={children} />
-      </div>
-    </div>
-  );
-}
 
 export default function PluginPage() {
   return (
@@ -144,8 +131,8 @@ export default function PluginPage() {
             >
               better-fetch-site-qa
             </a>{" "}
-            adds <code className="font-mono">geo-check</code> (view your site
-            from any country), <code className="font-mono">seo-render-check</code>{" "}
+            adds <code className="font-mono">geo-check</code> (check country-coherent
+            browser identity), <code className="font-mono">seo-render-check</code>{" "}
             (what crawlers see vs users), and{" "}
             <code className="font-mono">monitor-page-changes</code>.
           </CardDescription>

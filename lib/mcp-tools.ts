@@ -1,9 +1,21 @@
 export const MCP_TOOLS = [
   {
+    name: "search_tools",
+    title: "Search Better Fetch tools",
+    desc:
+      "Find a ready-made scraper or extractor in the live catalogue and return its schema, example inputs, and estimated credit cost.",
+  },
+  {
+    name: "run_tool",
+    title: "Run a Better Fetch tool",
+    desc:
+      "Run one exact catalogue tool selected with search_tools, without loading every specialist tool into the default MCP surface.",
+  },
+  {
     name: "fetch_url",
     title: "Fetch URL",
     desc:
-      "Fetch a URL with Better Fetch's auto strategy: direct HTTP for simple body reads, Chromium when rendering/browser features are needed. Returns body text or HTML plus status, final URL, block, cache, and transport metadata.",
+      "Fetch a URL with Better Fetch's auto strategy: direct HTTP first, Chromium when rendering is needed, and optional residential escalation. Returns content plus block, cache, transport, attempt, and routing metadata.",
   },
   {
     name: "scrape_json",

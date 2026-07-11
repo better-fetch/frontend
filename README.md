@@ -1,8 +1,10 @@
-# better fetch — dashboard
+# Better Fetch — product site and hosted MCP server
 
-Minimal Next.js (App Router) frontend for [Better Fetch](../backend/README.md):
-magic-link sign-in (Supabase Auth), API key management, and Stripe
-subscriptions. Built with Tailwind CSS v4 and [shadcn/ui](https://ui.shadcn.com)
+MCP-first Next.js product surface for
+[Better Fetch](https://github.com/better-fetch/backend):
+Claude/ChatGPT onboarding, hosted Streamable HTTP MCP, OAuth, the live tool
+catalogue, magic-link sign-in, API key management, and Stripe subscriptions.
+Built with Tailwind CSS v4 and [shadcn/ui](https://ui.shadcn.com)
 (neutral theme; components live in `components/ui/`). Deployed on Fly.io at
 `https://betterfetch.co`; the API itself runs on Fly.io at
 `https://api.betterfetch.co`.
@@ -11,7 +13,7 @@ subscriptions. Built with Tailwind CSS v4 and [shadcn/ui](https://ui.shadcn.com)
 
 - **Supabase Postgres** is the single source of truth for control-plane data:
   `api_keys`, `subscriptions`, `usage_counters`, and `browser_sessions`
-  metadata (see `../supabase/migrations/`).
+  metadata. Migrations live in the private deployment monorepo.
 - **Supabase Storage** holds encrypted portable browser-session
   `storage_state` snapshots. Backend local profile directories are a
   machine-local cache, not the source of truth.
@@ -118,8 +120,8 @@ Remaining manual steps:
 - **MCP connector (OAuth)**: `supabase db push` to apply the
   `mcp_oauth` migration, then `fly deploy`. No new secrets — the OAuth
   server and the MCP endpoint reuse `SUPABASE_SECRET_KEY` and
-  `NEXT_PUBLIC_SITE_URL`. Users (Claude, Claude Cowork, Claude Desktop)
-  add `https://betterfetch.co/api/mcp` as a custom connector; tokens it
+  `NEXT_PUBLIC_SITE_URL`. Users (Claude, ChatGPT desktop, Codex, and other
+  compliant clients) add `https://betterfetch.co/api/mcp`; tokens it
   issues are ordinary `bf_` keys, revocable from /keys. Manual clients
   can still send `Authorization: Bearer bf_...` to the same endpoint.
 - **Dashboard session cleanup**: set `BETTER_FETCH_API_KEY` on

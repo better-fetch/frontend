@@ -5,11 +5,15 @@ import { z } from "zod";
 import { sha256Hex } from "@/lib/keys";
 import { MCP_TOOL_DESCRIPTIONS } from "@/lib/mcp-tools";
 import { OAUTH_SCOPE } from "@/lib/oauth";
+import { runTool } from "@/lib/runner-client";
+import { categoryLabel, compareTools, toolMetaDescription } from "@/lib/tool-display";
+import { getLiveTool, getLiveTools } from "@/lib/tools-registry";
 import { isTier, PLANS } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { effectivePeriod } from "@/lib/usage";
 
 // Remote MCP server (Streamable HTTP) at /api/mcp — the endpoint users add
-// to Claude, Claude Cowork, or Claude Desktop as a custom connector. Auth
+// to Claude, ChatGPT desktop, Codex, or any spec-compliant MCP client. Auth
 // accepts any live `bf_` API key: OAuth-issued access tokens ARE api_keys
 // rows, and a hand-pasted key from /keys works identically. Browser fetch
 // tools are forwarded to the Python backend with that key, so validation,
@@ -54,6 +58,12 @@ const STRATEGY = z
   .enum(["auto", "http", "browser"])
   .optional()
   .describe("Execution strategy: auto, http, or browser (default auto)");
+const PROXY = z
+  .enum(["none", "auto", "residential"])
+  .optional()
+  .describe(
+    "Network routing: none (default), auto (direct first, residential only after a block), or residential (proxy every attempt; use only when necessary)",
+  );
 const CACHE_TTL_MS = z
   .number()
   .int()
@@ -91,6 +101,7 @@ type BetterFetchApiResult = {
   screenshot_b64?: string | null;
   transport?: string;
   timing_ms?: number;
+  proxy_used?: boolean;
   network?: unknown[];
   network_streams?: unknown[];
   cf_clearance?: string | null;
@@ -180,7 +191,108 @@ function asText(value: unknown) {
 }
 
 const handler = createMcpHandler(
-  (server) => {
+  async (server) => {
+    // Keep the default tool surface compact. The catalogue can grow without
+    // forcing every MCP client to reason over dozens of specialist schemas on
+    // every request: agents search the registry, then invoke one exact tool.
+    server.registerTool(
+      "search_tools",
+      {
+        title: "Search Better Fetch tools",
+        description:
+          "Search the live Better Fetch catalogue for a ready-made scraper or extractor before assembling a workflow from lower-level tools.",
+        inputSchema: {
+          query: z
+            .string()
+            .max(120)
+            .optional()
+            .describe("What data or site capability is needed, e.g. 'Google Maps leads'"),
+          category: z
+            .string()
+            .max(64)
+            .optional()
+            .describe("Optional exact category slug returned by a previous search"),
+          limit: z.number().int().min(1).max(20).optional().describe("Maximum matches (default 8)"),
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
+      async (args) => {
+        const query = args.query?.trim().toLowerCase() ?? "";
+        const terms = query.split(/\s+/).filter(Boolean);
+        const tools = (await getLiveTools())
+          .filter((tool) => !args.category || tool.category === args.category)
+          .map((tool) => {
+            const haystack = [
+              tool.name,
+              tool.title,
+              tool.description,
+              tool.seo?.keywords.join(" ") ?? "",
+              categoryLabel(tool.category),
+            ]
+              .join(" ")
+              .toLowerCase();
+            return {
+              tool,
+              matches: terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0),
+            };
+          })
+          .filter(({ matches }) => terms.length === 0 || matches > 0)
+          .sort((a, b) => b.matches - a.matches || compareTools(a.tool, b.tool))
+          .slice(0, args.limit ?? 8)
+          .map(({ tool }) => ({
+            name: tool.name,
+            title: tool.title,
+            description: toolMetaDescription(tool),
+            category: tool.category,
+            category_label: categoryLabel(tool.category),
+            credits_estimate: tool.credits_estimate,
+            input_schema: tool.input_schema,
+            examples: tool.examples,
+          }));
+        return asText({ matches: tools, count: tools.length });
+      },
+    );
+
+    server.registerTool(
+      "run_tool",
+      {
+        title: "Run a Better Fetch tool",
+        description:
+          "Run one exact ready-made tool returned by search_tools. Review its input schema and estimated credits before calling.",
+        inputSchema: {
+          name: z.string().min(2).max(100).describe("Exact tool name returned by search_tools"),
+          input: z.record(z.string(), z.unknown()).describe("Input matching the tool's input_schema"),
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+      },
+      async (args, extra) => {
+        const tool = await getLiveTool(args.name);
+        if (!tool) {
+          return toolError({
+            error: "tool_not_found",
+            message: `No live Better Fetch tool named ${args.name}. Call search_tools first.`,
+          });
+        }
+        const result = await runTool(tool.name, args.input, extra.authInfo!.token);
+        if (result.ok === false) return toolError(result);
+        return asText({
+          tool: tool.name,
+          credits_estimate: tool.credits_estimate,
+          output: result.output,
+        });
+      },
+    );
+
     server.registerTool(
       "fetch_url",
       {
@@ -197,6 +309,7 @@ const handler = createMcpHandler(
           wait_ms: WAIT_MS,
           timeout_ms: TIMEOUT_MS,
           strategy: STRATEGY,
+          proxy: PROXY,
           cache_ttl_ms: CACHE_TTL_MS,
           country: COUNTRY,
           session: SESSION,
@@ -233,6 +346,7 @@ const handler = createMcpHandler(
           wait_ms: args.wait_ms,
           timeout_ms: args.timeout_ms,
           strategy: args.strategy,
+          proxy: args.proxy,
           cache_ttl_ms: args.cache_ttl_ms,
           country: args.country,
           session: args.session,
@@ -255,6 +369,7 @@ const handler = createMcpHandler(
           attempts: result.attempts,
           transport: result.transport,
           timing_ms: result.timing_ms,
+          proxy_used: result.proxy_used,
           cache_status: result.cache_status,
           content_type: result.content_type,
           content_kind: result.content_kind,
@@ -276,6 +391,7 @@ const handler = createMcpHandler(
           url: z.string().url().describe("The JSON endpoint to fetch"),
           timeout_ms: TIMEOUT_MS,
           strategy: STRATEGY,
+          proxy: PROXY,
           cache_ttl_ms: CACHE_TTL_MS,
           country: COUNTRY,
           session: SESSION,
@@ -287,6 +403,7 @@ const handler = createMcpHandler(
           url: args.url,
           timeout_ms: args.timeout_ms,
           strategy: args.strategy,
+          proxy: args.proxy,
           cache_ttl_ms: args.cache_ttl_ms,
           country: args.country,
           session: args.session,
@@ -303,6 +420,7 @@ const handler = createMcpHandler(
           attempts: result.attempts,
           transport: result.transport,
           timing_ms: result.timing_ms,
+          proxy_used: result.proxy_used,
           cache_status: result.cache_status,
           content_type: result.content_type,
           content_kind: result.content_kind,
@@ -327,6 +445,7 @@ const handler = createMcpHandler(
           wait_selector: WAIT_SELECTOR,
           wait_ms: WAIT_MS,
           timeout_ms: TIMEOUT_MS,
+          proxy: PROXY,
           country: COUNTRY,
           session: SESSION,
         },
@@ -340,6 +459,7 @@ const handler = createMcpHandler(
           wait_selector: args.wait_selector,
           wait_ms: args.wait_ms,
           timeout_ms: args.timeout_ms,
+          proxy: args.proxy,
           country: args.country,
           session: args.session,
         });
@@ -382,6 +502,7 @@ const handler = createMcpHandler(
             .optional()
             .describe("Extra milliseconds to wait so late XHR calls are captured"),
           timeout_ms: TIMEOUT_MS,
+          proxy: PROXY,
           country: COUNTRY,
           session: SESSION,
           include_bodies: z
@@ -405,6 +526,7 @@ const handler = createMcpHandler(
           url: args.url,
           wait_ms: args.wait_ms ?? 3000,
           timeout_ms: args.timeout_ms,
+          proxy: args.proxy,
           country: args.country,
           session: args.session,
           capture_network: true,
@@ -483,6 +605,7 @@ const handler = createMcpHandler(
         return asText({
           page: result.final_url,
           title: result.title,
+          proxy_used: result.proxy_used,
           api_calls: calls,
           ...(includeStreams ? { stream_values: streamValues } : {}),
         });
@@ -497,6 +620,7 @@ const handler = createMcpHandler(
         inputSchema: {
           url: z.string().url().describe("A URL on the Cloudflare-protected site"),
           timeout_ms: TIMEOUT_MS,
+          proxy: PROXY,
           country: COUNTRY,
           session: SESSION,
         },
@@ -505,6 +629,7 @@ const handler = createMcpHandler(
         const result = await callFetchApi(extra.authInfo!.token, {
           url: args.url,
           timeout_ms: args.timeout_ms,
+          proxy: args.proxy,
           country: args.country,
           session: args.session,
           return_cf_clearance: true,
@@ -513,6 +638,7 @@ const handler = createMcpHandler(
         return asText({
           status: result.status,
           final_url: result.final_url,
+          proxy_used: result.proxy_used,
           cf_clearance: result.cf_clearance ?? null,
           cf_clearance_cookie: result.cf_clearance_cookie ?? null,
           session: result.cf_clearance_session ?? null,
@@ -528,6 +654,7 @@ const handler = createMcpHandler(
         inputSchema: {
           url: z.string().url().describe("A URL on the DataDome-protected site"),
           timeout_ms: TIMEOUT_MS,
+          proxy: PROXY,
           country: COUNTRY,
           session: SESSION,
         },
@@ -536,6 +663,7 @@ const handler = createMcpHandler(
         const result = await callFetchApi(extra.authInfo!.token, {
           url: args.url,
           timeout_ms: args.timeout_ms,
+          proxy: args.proxy,
           country: args.country,
           session: args.session,
           return_datadome_cookie: true,
@@ -546,6 +674,7 @@ const handler = createMcpHandler(
           final_url: result.final_url,
           blocked: result.blocked,
           attempts: result.attempts,
+          proxy_used: result.proxy_used,
           datadome_detected: result.datadome_detected ?? false,
           datadome_cookie: result.datadome_cookie ?? null,
           datadome_cookie_detail: result.datadome_cookie_detail ?? null,
@@ -567,7 +696,7 @@ const handler = createMcpHandler(
         const { data: sub } = await admin
           .from("subscriptions")
           .select(
-            "tier, status, monthly_quota, session_limit, session_idle_ttl_days, current_period_start, current_period_end",
+            "tier, status, monthly_quota, session_limit, session_idle_ttl_days, stripe_subscription_id, current_period_start, current_period_end",
           )
           .eq("user_id", userId)
           .in("status", ["active", "trialing", "past_due"])
@@ -580,13 +709,14 @@ const handler = createMcpHandler(
               "No active subscription on this account — pick a plan at https://betterfetch.co/#pricing",
           });
         }
+        const period = effectivePeriod(sub);
         let calls = 0;
-        if (sub.current_period_start) {
+        if (period) {
           const { data: usage } = await admin
             .from("usage_counters")
             .select("calls")
             .eq("user_id", userId)
-            .eq("period_start", sub.current_period_start)
+            .eq("period_start", period.start.toISOString())
             .maybeSingle();
           calls = usage?.calls ?? 0;
         }
@@ -610,7 +740,7 @@ const handler = createMcpHandler(
           session_idle_ttl_days:
             sub.session_idle_ttl_days ??
             (sub.tier && isTier(sub.tier) ? PLANS[sub.tier].sessionIdleTtlDays : 7),
-          period_ends: sub.current_period_end,
+          period_ends: period?.end?.toISOString() ?? sub.current_period_end,
         });
       },
     );
@@ -661,10 +791,12 @@ const handler = createMcpHandler(
     // types serverInfo as bare {name, version} but hands it verbatim to
     // McpServer, which accepts the spec's full Implementation — hence the
     // satisfies + cast.
+    instructions:
+      "Better Fetch is the web data layer for AI agents. Use it only for public or authorized web retrieval. Start with fetch_url strategy=auto; prefer scrape_json or discover_apis when structured data is available. Reuse a stable session for multi-step work. Use proxy=auto only after direct access is blocked or regional egress is required, and residential only when explicitly necessary. Search the catalogue before run_tool. Each accepted engine call consumes credits: avoid blind retries and report blocked, block_reason, attempts, and proxy_used.",
     serverInfo: {
       name: "better-fetch",
       title: "Better Fetch",
-      version: "1.2.0",
+      version: "2.0.0",
       websiteUrl: SITE_BASE,
       icons: [
         {

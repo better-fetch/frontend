@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CodeTabs } from "@/components/code-tabs";
-import { CheckIcon, McpIcon, PluginIcon } from "@/components/icons";
+import { AgentInstallTabs } from "@/components/agent-install-tabs";
+import { CheckIcon, McpIcon } from "@/components/icons";
+import { ToolCard } from "@/components/tool-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,112 +15,150 @@ import {
 } from "@/components/ui/card";
 import { PLANS, type Tier } from "@/lib/plans";
 import { getClaims } from "@/lib/supabase/server";
+import { getPopularTools } from "@/lib/tool-display";
+import { getLiveTools } from "@/lib/tools-registry";
 
 const FEATURES: Record<Tier, string[]> = {
-  free: ["50 calls/mo", "1 stored browser session", "No charge — card on file"],
-  starter: ["25,000 calls/mo", "10 stored browser sessions", "Screenshots"],
-  pro: [
-    "100,000 calls/mo",
-    "Everything in Starter",
-    "Regional routing",
-    "50 stored browser sessions",
-  ],
-  scale: [
-    "500,000 calls/mo",
-    "Everything in Pro",
-    "250 stored browser sessions",
-  ],
+  free: ["50 calls / month", "1 stored browser session", "OAuth or API key"],
+  starter: ["25,000 calls / month", "10 stored browser sessions", "Screenshots"],
+  pro: ["100,000 calls / month", "Residential routing", "50 stored browser sessions"],
+  scale: ["500,000 calls / month", "Everything in Pro", "250 stored browser sessions"],
 };
+
+const CAPABILITIES = [
+  {
+    title: "Escalates only when needed",
+    description:
+      "Starts with fast HTTP, moves to Chromium for rendered pages, and can use residential egress when a target blocks direct traffic.",
+  },
+  {
+    title: "Keeps the browser state",
+    description:
+      "Account-scoped sessions preserve cookies, localStorage, browser identity, and cache across an agent's multi-step work.",
+  },
+  {
+    title: "Returns data, not browser noise",
+    description:
+      "Fetch pages, discover the APIs behind them, extract structured JSON, capture screenshots, or run a ready-made scraper.",
+  },
+];
 
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ code?: string }>;
 }) {
-  // Supabase auth falls back to redirecting to the site root with ?code=
-  // when the intended redirect URL isn't in its allow-list. Forward those
-  // to the confirm handler instead of silently dropping the sign-in.
   const { code } = await searchParams;
   if (code) redirect(`/auth/confirm?code=${encodeURIComponent(code)}`);
 
-  const signedIn = Boolean(await getClaims());
+  const [signedIn, tools] = await Promise.all([
+    getClaims().then(Boolean),
+    getLiveTools({ force: true }).catch(() => []),
+  ]);
+  const popularTools = getPopularTools(tools, 6);
 
   return (
-    <div className="space-y-16">
-      <section className="space-y-4 pt-6 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">
-          Unlock the web
-        </h1>
-        <p className="mx-auto max-w-xl text-lg text-muted-foreground">
-          JavaScript rendering, browser geo-emulation, sticky sessions,
-          screenshots, and clearance-cookie collection when targets issue them —
-          one API call.
-        </p>
-        <div className="flex justify-center gap-2 pt-2">
-          <Button asChild>
-            <Link href={signedIn ? "/keys" : "/login"}>
-              {signedIn ? "Manage API keys" : "Get started"}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/docs">Read the docs</Link>
-          </Button>
-        </div>
-      </section>
-
-      <section>
-        <CodeTabs />
-      </section>
-
-      <section id="integrations" className="space-y-6">
-        <div className="space-y-1 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Use it from your AI tools
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Connect Better Fetch to any AI model or agent — no glue code.
+    <div className="space-y-24">
+      <section className="relative space-y-8 overflow-hidden pt-8 text-center sm:pt-14">
+        <div className="pointer-events-none absolute inset-x-1/4 top-0 -z-10 h-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="space-y-5">
+          <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
+            The web data layer for AI
+          </Badge>
+          <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
+            Give your AI a better fetch.
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            Install one MCP connector. Claude and ChatGPT can render JavaScript,
+            keep browser sessions, route regionally, discover APIs, and return
+            structured web data—without glue code.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="flex h-full flex-col">
-            <CardHeader>
-              <McpIcon className="size-8 text-primary" />
-              <CardTitle>MCP connector</CardTitle>
-              <CardDescription>
-                A remote Model Context Protocol server so Claude, Cursor, and
-                other AI clients can fetch the web as a tool — OAuth or API
-                key.
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="mt-auto">
-              <Button variant="outline" asChild>
-                <Link href="/mcp">Set up MCP →</Link>
-              </Button>
-            </CardFooter>
-          </Card>
-          <Card className="flex h-full flex-col">
-            <CardHeader>
-              <PluginIcon className="size-8 text-primary" />
-              <CardTitle>Claude Code plugin</CardTitle>
-              <CardDescription>
-                One command installs Better Fetch skills plus the MCP connector
-                into Claude Code, authed by your API key.
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="mt-auto">
-              <Button variant="outline" asChild>
-                <Link href="/plugin">Install the plugin →</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+        <AgentInstallTabs />
+      </section>
+
+      {popularTools.length > 0 ? (
+        <section id="tools" className="space-y-6">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary">
+                Ready-made capabilities
+              </p>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Ask for the data. Skip the scraper code.
+              </h2>
+            </div>
+            <Button variant="outline" asChild>
+              <Link href="/tools">Browse all {tools.length} tools</Link>
+            </Button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {popularTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-8">
+        <div className="space-y-2 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary">
+            Agent-native retrieval
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight">
+            One connector. The right fetch strategy.
+          </h2>
+          <p className="mx-auto max-w-2xl text-muted-foreground">
+            Better Fetch gives the model both the tools and the operating rules
+            to retrieve the web reliably, without blindly retrying expensive browser calls.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {CAPABILITIES.map((capability, index) => (
+            <Card key={capability.title} className="relative overflow-hidden">
+              <CardHeader>
+                <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-primary/10 font-mono text-sm text-primary">
+                  0{index + 1}
+                </div>
+                <CardTitle>{capability.title}</CardTitle>
+                <CardDescription className="leading-relaxed">
+                  {capability.description}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border bg-card p-6 sm:p-10">
+        <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="space-y-3">
+            <McpIcon className="size-9 text-primary" />
+            <h2 className="text-2xl font-semibold tracking-tight">
+              MCP is the product. REST is the escape hatch.
+            </h2>
+            <p className="max-w-2xl text-muted-foreground">
+              Most people should connect Better Fetch directly to their AI.
+              Developers can still use the same engine through the versioned API,
+              with the same keys, sessions, metering, and fetch outcomes.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button asChild>
+              <Link href="/mcp">Connect your AI</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/docs">Use the REST API</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
       <section id="pricing" className="space-y-6">
         <div className="space-y-1 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight">Pricing</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">Start with 50 free calls</h2>
           <p className="text-sm text-muted-foreground">
-            Simple monthly plans. Change or cancel anytime.
+            No card required. Upgrade when your agents need more retrieval capacity.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -138,11 +177,6 @@ export default async function Home({
                     ${PLANS[tier].usd}
                   </span>{" "}
                   / month
-                  {tier === "free" ? (
-                    <span className="block text-xs">
-                      Card required to verify you&apos;re human
-                    </span>
-                  ) : null}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
@@ -156,7 +190,13 @@ export default async function Home({
                 </ul>
               </CardContent>
               <CardFooter>
-                {signedIn ? (
+                {tier === "free" ? (
+                  <Button className="w-full" variant="outline" asChild>
+                    <Link href={signedIn ? "/keys" : "/login"}>
+                      {signedIn ? "Open dashboard" : "Start free"}
+                    </Link>
+                  </Button>
+                ) : signedIn ? (
                   <form action="/api/checkout" method="post" className="w-full">
                     <input type="hidden" name="tier" value={tier} />
                     <Button
@@ -164,7 +204,7 @@ export default async function Home({
                       className="w-full"
                       variant={tier === "pro" ? "default" : "outline"}
                     >
-                      {tier === "free" ? "Start free" : "Subscribe"}
+                      Subscribe
                     </Button>
                   </form>
                 ) : (
@@ -173,13 +213,16 @@ export default async function Home({
                     variant={tier === "pro" ? "default" : "outline"}
                     asChild
                   >
-                    <Link href="/login">Sign up</Link>
+                    <Link href="/login">Start free first</Link>
                   </Button>
                 )}
               </CardFooter>
             </Card>
           ))}
         </div>
+        <p className="text-center text-xs text-muted-foreground">
+          An accepted engine call consumes one credit. Multi-step tools show their estimated credit cost before they run.
+        </p>
       </section>
     </div>
   );

@@ -44,5 +44,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/keys/:path*", "/login", "/oauth/:path*", "/api/oauth/authorize", "/api/keys/:path*", "/api/checkout", "/api/upgrade", "/api/portal"],
+  matcher: ["/keys/:path*", "/login", "/oauth/:path*", "/api/oauth/authorize", "/api/keys/:path*", "/api/tools/:path*", "/api/checkout", "/api/upgrade", "/api/portal"],
 };

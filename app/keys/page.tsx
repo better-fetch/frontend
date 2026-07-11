@@ -19,8 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PLANS, isTier } from "@/lib/plans";
+import { PAID_TIERS, PLANS, isTier } from "@/lib/plans";
 import { createClient, getClaims } from "@/lib/supabase/server";
+import { callsInPeriod, effectivePeriod } from "@/lib/usage";
 import { ClearSessionButton, KeyActions, RevokeButton } from "./key-actions";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ type SubscriptionRow = {
   monthly_quota: number;
   session_limit: number;
   session_idle_ttl_days: number;
+  stripe_subscription_id: string | null;
   current_period_start: string | null;
   current_period_end: string | null;
 };
@@ -52,8 +54,6 @@ const CURL_EXAMPLE = `curl -s https://api.betterfetch.co/v1/fetch \\
   -H "Content-Type: application/json" \\
   -d '{"url": "https://example.com"}'`;
 
-const PAID_TIERS = ["starter", "pro", "scale"] as const;
-
 export default async function KeysPage({
   searchParams,
 }: {
@@ -72,6 +72,7 @@ export default async function KeysPage({
         .from("api_keys")
         .select("id, name, key_prefix, created_at, last_used_at, revoked_at")
         .is("revoked_at", null)
+        .eq("kind", "user")
         .order("created_at", { ascending: false }),
       supabase.from("subscriptions").select("*").maybeSingle<SubscriptionRow>(),
       supabase
@@ -93,13 +94,15 @@ export default async function KeysPage({
   const subscribed =
     sub && ["active", "trialing", "past_due"].includes(sub.status);
 
-  const used =
-    (subscribed &&
-      usageRows?.find((u) => u.period_start === sub.current_period_start)
-        ?.calls) ||
-    0;
+  const period = subscribed ? effectivePeriod(sub) : null;
+  const used = period ? callsInPeriod(usageRows, period.start) : 0;
 
   const isFree = subscribed && sub.tier === "free";
+  // Cardless free accounts start a fresh checkout; legacy free accounts with
+  // a card on file upgrade in place.
+  const upgradeAction = sub?.stripe_subscription_id
+    ? "/api/upgrade"
+    : "/api/checkout";
   const sessionLimit =
     subscribed && typeof sub.session_limit === "number"
       ? sub.session_limit
@@ -156,8 +159,8 @@ export default async function KeysPage({
               {` · ${sessionLimit.toLocaleString()} stored browser session${
                 sessionLimit === 1 ? "" : "s"
               }`}
-              {sub.current_period_end
-                ? ` · resets ${new Date(sub.current_period_end).toISOString().slice(0, 10)}`
+              {period?.end
+                ? ` · resets ${period.end.toISOString().slice(0, 10)}`
                 : ""}
             </CardDescription>
           ) : (
@@ -219,8 +222,8 @@ export default async function KeysPage({
               </h2>
               <p className="text-sm text-muted-foreground">
                 You&apos;re on Free (50 calls/mo and 1 stored browser session).
-                Move up anytime — your card on file is charged the prorated
-                difference, and your new quota takes effect immediately.
+                Move up anytime — your new quota takes effect as soon as
+                payment completes.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -235,7 +238,7 @@ export default async function KeysPage({
                     · {PLANS[t].sessionLimit.toLocaleString()} sessions
                   </div>
                   <form
-                    action="/api/upgrade"
+                    action={upgradeAction}
                     method="post"
                     className="mt-auto pt-1"
                   >

@@ -105,7 +105,7 @@ Session names are account-scoped but canonicalized for backend routing: only let
 
 ## GET /v1/health
 
-Liveness check, no auth: \`curl -sS https://api.betterfetch.co/v1/health\`. The response includes the Better Fetch service \`version\`, managed proxy status under \`managed_proxy\`, and pinned browser metadata under \`browser\` (\`version\`, \`bundled_version\`, \`platform\`, \`installed\`). Add \`?geo=1&country=us\` to include the country browser geo-emulation defaults. \`?proxy=1\` is a deprecated no-op diagnostic; managed proxy routing has been removed.
+Liveness check, no auth: \`curl -sS https://api.betterfetch.co/v1/health\`. The response includes the service \`version\`, managed residential routing availability under \`managed_proxy\`, and pinned browser metadata under \`browser\`. Add \`?geo=1&country=us\` to include country browser-identity defaults. Select routing per fetch with \`proxy: "none" | "auto" | "residential"\`.
 
 ## Tips
 
@@ -113,7 +113,7 @@ ${tips}
 
 ## MCP connector
 
-AI agents can call Better Fetch as a tool via the Model Context Protocol: remote server at https://betterfetch.co/api/mcp (OAuth sign-in as a custom connector in Claude / Claude Cowork / Claude Desktop, or \`Authorization: Bearer <your-bf-key>\`). Also available as a Claude Code plugin: \`/plugin marketplace add better-fetch/claude-plugins\`.
+AI agents call Better Fetch through the hosted Streamable HTTP MCP server at https://betterfetch.co/api/mcp. Claude and ChatGPT desktop can add the URL and sign in with OAuth. Codex uses \`codex mcp add better-fetch --url https://betterfetch.co/api/mcp\` followed by \`codex mcp login better-fetch\`. API-key bearer auth remains available for unattended clients. The Claude Code plugin adds retrieval skills and a scraper subagent: \`/plugin marketplace add better-fetch/claude-plugins\`.
 
 Tools:
 

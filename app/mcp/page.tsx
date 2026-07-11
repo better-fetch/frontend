@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CopyButton, CopyField } from "@/components/copy-button";
+import { AgentInstallTabs } from "@/components/agent-install-tabs";
+import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,172 +19,97 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MCP_TOOLS } from "@/lib/mcp-tools";
+import { getLiveTools } from "@/lib/tools-registry";
 
 export const metadata: Metadata = {
-  title: "MCP connector",
+  title: "Connect Better Fetch to Claude and ChatGPT",
   description:
-    "Connect Better Fetch to AI models via the Model Context Protocol. One-click OAuth connector for Claude and Claude Cowork, or a remote server for Claude Code, Cursor, and other MCP clients.",
+    "Add Better Fetch to Claude, ChatGPT desktop, or Codex with one hosted MCP connector. OAuth sign-in, no local browser service, and 50 free calls each month.",
   alternates: { canonical: "/mcp" },
 };
 
 const MCP_URL = "https://betterfetch.co/api/mcp";
 
-const REMOTE_CONFIG = `{
-  "mcpServers": {
-    "better-fetch": {
-      "type": "http",
-      "url": "${MCP_URL}",
-      "headers": { "Authorization": "Bearer bf_your_key_here" }
-    }
-  }
-}`;
+const API_KEY_CONFIG = `[mcp_servers.better_fetch]
+url = "https://betterfetch.co/api/mcp"
+bearer_token_env_var = "BETTER_FETCH_API_KEY"
+tool_timeout_sec = 260`;
 
-const CLI = `claude mcp add --transport http better-fetch ${MCP_URL} \\
-  --header "Authorization: Bearer bf_your_key_here"`;
+export default async function McpPage() {
+  const liveTools = await getLiveTools({ force: true }).catch(() => []);
 
-function CodeBlock({ children }: { children: string }) {
   return (
-    <div className="relative">
-      <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-4 pr-12 font-mono text-xs leading-relaxed">
-        {children}
-      </pre>
-      <div className="absolute right-2 top-2">
-        <CopyButton value={children} />
-      </div>
-    </div>
-  );
-}
-
-function StepBadge({ n }: { n: number }) {
-  return (
-    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-xs font-semibold text-primary-foreground">
-      {n}
-    </span>
-  );
-}
-
-export default function McpPage() {
-  return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">MCP connector</h1>
-        <p className="text-muted-foreground">
-          Give any AI model browser-grade fetching as a tool, via the{" "}
-          <a
-            href="https://modelcontextprotocol.io"
-            className="underline"
-            rel="noopener"
-          >
-            Model Context Protocol
-          </a>
-          . Sign in with OAuth from Claude or Claude Cowork, or authenticate
-          with an API key — browser fetch tool calls are metered against your
-          plan like the REST API.
-        </p>
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Claude &amp; Claude Cowork — three steps, no key
-        </h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <StepBadge n={1} /> Open connector settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              In Claude or Claude Cowork, go to{" "}
-              <strong className="text-foreground">
-                Settings → Connectors → Add custom connector
-              </strong>
-              . Works on claude.ai, Claude Desktop, and mobile.
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <StepBadge n={2} /> Paste the server URL
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <CopyField value={MCP_URL} />
-              <p className="text-sm text-muted-foreground">
-                That&apos;s the only field the connector needs.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <StepBadge n={3} /> Connect &amp; sign in
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Click <strong className="text-foreground">Connect</strong>, sign
-              in with your Better Fetch email, and approve the consent screen.
-              The tools below appear in your chats immediately.
-            </CardContent>
-          </Card>
+    <div className="space-y-14">
+      <section className="space-y-6 text-center">
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary">
+            Hosted MCP connector
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Give your AI a better fetch.
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            One connection gives Claude and ChatGPT browser-grade retrieval,
+            structured extraction, sticky sessions, API discovery, screenshots,
+            regional routing, and {liveTools.length} ready-made web tools.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Connecting creates a key named &ldquo;Claude (MCP connector)&rdquo; on
-          your <Link href="/keys" className="underline">keys page</Link>; revoke
-          it there to disconnect at any time.
-        </p>
+        <AgentInstallTabs />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Hosted</CardTitle>
+            <CardDescription>
+              No Playwright, browser binary, proxy, or local daemon to install.
+              Better Fetch runs the retrieval layer for the model.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>OAuth first</CardTitle>
+            <CardDescription>
+              Sign in with your Better Fetch account. The connection creates a
+              revocable key without exposing it in chat or configuration.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost-aware</CardTitle>
+            <CardDescription>
+              The server tells the agent to start cheaply, reuse sessions,
+              avoid blind retries, and escalate routing only when necessary.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Remote server (API key)</CardTitle>
+          <CardTitle>A compact tool surface</CardTitle>
           <CardDescription>
-            The same endpoint (Streamable HTTP) also accepts your API key
-            directly — handy for Claude Code, Cursor, and other clients you
-            configure by hand. Need a key?{" "}
-            <Link href="/keys" className="underline">
-              Create one
-            </Link>{" "}
-            (it starts with <code className="font-mono">bf_</code>).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Config (Claude Code, .mcp.json)</p>
-            <CodeBlock>{REMOTE_CONFIG}</CodeBlock>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Or via the CLI</p>
-            <CodeBlock>{CLI}</CodeBlock>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tools</CardTitle>
-          <CardDescription>
-            Using Claude Code? The{" "}
-            <Link href="/plugin" className="underline">
-              plugin
-            </Link>{" "}
-            adds these plus nine skills and a scraper subagent in one command.
+            Core retrieval primitives stay directly available. The growing
+            catalogue is searched on demand, so the model does not have to choose
+            among dozens of specialist schemas on every turn.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-40">Tool</TableHead>
+                <TableHead className="w-44">Tool</TableHead>
                 <TableHead>What it does</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MCP_TOOLS.map((t) => (
-                <TableRow key={t.name}>
-                  <TableCell className="font-mono text-xs">{t.name}</TableCell>
+              {MCP_TOOLS.map((tool) => (
+                <TableRow key={tool.name}>
+                  <TableCell className="font-mono text-xs">{tool.name}</TableCell>
                   <TableCell className="whitespace-normal text-muted-foreground">
-                    {t.desc}
+                    {tool.desc}
                   </TableCell>
                 </TableRow>
               ))}
@@ -192,12 +118,33 @@ export default function McpPage() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Use an API key instead</CardTitle>
+          <CardDescription>
+            OAuth is the recommended path. For unattended Codex environments or
+            clients without OAuth, create a <code className="font-mono">bf_</code> key
+            and read it from an environment variable.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <CodeBlock>{API_KEY_CONFIG}</CodeBlock>
+          <p className="text-xs text-muted-foreground">
+            Server URL: <code className="font-mono">{MCP_URL}</code>. Keep API keys
+            out of committed config and chat transcripts.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap justify-center gap-2">
         <Button asChild>
-          <Link href="/plugin">Or install the Claude Code plugin →</Link>
+          <Link href="/tools">Browse ready-made tools</Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link href="/docs">API reference</Link>
+          <Link href="/plugin">Claude Code skills and subagent</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/docs">REST API reference</Link>
         </Button>
       </div>
     </div>

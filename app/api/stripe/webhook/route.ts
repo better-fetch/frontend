@@ -25,6 +25,29 @@ async function upsertSubscription(sub: Stripe.Subscription) {
     .maybeSingle();
   if (existing?.tier === "internal") return;
 
+  // A canceled subscription reverts the account to the cardless free tier
+  // (metering derives the UTC-month period from the null stripe ids) rather
+  // than recording the dead paid state. The Stripe customer id is kept so a
+  // future checkout reuses it.
+  if (sub.status === "canceled") {
+    const { error } = await admin
+      .from("subscriptions")
+      .update({
+        stripe_subscription_id: null,
+        status: "active",
+        tier: "free",
+        monthly_quota: PLANS.free.quota,
+        session_limit: PLANS.free.sessionLimit,
+        session_idle_ttl_days: PLANS.free.sessionIdleTtlDays,
+        current_period_start: null,
+        current_period_end: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_customer_id", customerId);
+    if (error) throw error;
+    return;
+  }
+
   // Period fields live on the subscription item since the basil API.
   const item = sub.items.data[0];
   const priceId = item?.price?.id ?? null;

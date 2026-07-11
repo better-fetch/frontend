@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Better Fetch — browser-grade URL fetching API";
+export const alt = "Better Fetch — the web data layer for AI";
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -42,11 +42,10 @@ export default function OpengraphImage() {
             maxWidth: "900px",
           }}
         >
-          Unlock the web. JavaScript rendering, sticky sessions, screenshots —
-          one API call.
+          Give Claude and ChatGPT reliable access to live web data.
         </div>
         <div style={{ marginTop: "48px", fontSize: 28, color: "#94e2d5" }}>
-          api.betterfetch.co
+          One hosted MCP connector · betterfetch.co
         </div>
       </div>
     ),

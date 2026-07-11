@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CodeBlock } from "@/components/code-block";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -50,14 +51,6 @@ const NAV: NavItem[] = [
   { id: "mcp-tools", title: "MCP tools" },
   { id: "tips", title: "Tips" },
 ];
-
-function CodeBlock({ children }: { children: string }) {
-  return (
-    <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-4 font-mono text-xs leading-relaxed">
-      {children}
-    </pre>
-  );
-}
 
 function Section({
   id,
@@ -362,9 +355,9 @@ curl -sS "https://api.betterfetch.co/v1/health?geo=1&country=us"
     "installed": true
   },
   "managed_proxy": {
-    "enabled": false,
-    "provider": null,
-    "message": "Managed proxy routing has been removed."
+    "enabled": true,
+    "provider": "configured",
+    "message": "Use proxy=auto for direct-first escalation or proxy=residential for every attempt."
   },
   "geo_emulation": {
     "ok": true,

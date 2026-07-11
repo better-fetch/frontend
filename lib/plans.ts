@@ -9,14 +9,22 @@ export const PLANS = {
 
 export type Tier = keyof typeof PLANS;
 
+// The free tier is provisioned directly at signup (no Stripe object); only
+// paid tiers have Stripe prices.
+export const PAID_TIERS = ["starter", "pro", "scale"] as const satisfies readonly Tier[];
+export type PaidTier = (typeof PAID_TIERS)[number];
+
 export function isTier(value: string): value is Tier {
   return value in PLANS;
 }
 
+export function isPaidTier(value: string): value is PaidTier {
+  return (PAID_TIERS as readonly string[]).includes(value);
+}
+
 // Price IDs come from env so test and live mode don't require code changes.
-export function priceIdFor(tier: Tier): string {
+export function priceIdFor(tier: PaidTier): string {
   const id = {
-    free: process.env.STRIPE_PRICE_FREE,
     starter: process.env.STRIPE_PRICE_STARTER,
     pro: process.env.STRIPE_PRICE_PRO,
     scale: process.env.STRIPE_PRICE_SCALE,
@@ -26,7 +34,7 @@ export function priceIdFor(tier: Tier): string {
 }
 
 export function tierFromPriceId(priceId: string): Tier | null {
-  for (const tier of Object.keys(PLANS) as Tier[]) {
+  for (const tier of PAID_TIERS) {
     if (priceIdFor(tier) === priceId) return tier;
   }
   return null;
